@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import React from "react";
 
-const Header = () => {
+const Header: React.FC<{ light?: boolean }> = ({ light = false }) => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -15,17 +17,41 @@ const Header = () => {
   }, []);
 
   const navLinks = [
-    { href: "#experiencia", label: "Experiencia" },
-    { href: "#habitaciones", label: "Habitaciones" },
-    { href: "#servicios", label: "Servicios" },
-    { href: "#opiniones", label: "Opiniones" },
-    { href: "#ubicacion", label: "Ubicación" },
+    { id: "experiencia", label: "Experiencia" },
+    { id: "habitaciones", label: "Habitaciones" },
+    { id: "servicios", label: "Servicios" },
+    { id: "opiniones", label: "Opiniones" },
+    { id: "ubicacion", label: "Ubicación" },
   ];
+
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const handleNavClick = (id: string) => (e: React.MouseEvent<HTMLAnchorElement>) => {
+    // If on home, smooth scroll to section. Otherwise navigate to home with hash then scroll.
+    if (location.pathname === "/") {
+      e.preventDefault();
+      const el = document.getElementById(id);
+      if (el) el.scrollIntoView({ behavior: "smooth" });
+      setIsMobileMenuOpen(false);
+    } else {
+      e.preventDefault();
+      navigate(`/#${id}`);
+      setIsMobileMenuOpen(false);
+      // attempt to scroll after navigation (SPA timing)
+      setTimeout(() => {
+        const el = document.getElementById(id);
+        if (el) el.scrollIntoView({ behavior: "smooth" });
+      }, 200);
+    }
+  };
 
   return (
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-        isScrolled
+        light
+          ? "bg-white/95 py-3 shadow-sm"
+          : isScrolled
           ? "bg-background/95 backdrop-blur-md shadow-md py-3"
           : "bg-transparent py-5"
       }`}
@@ -34,7 +60,7 @@ const Header = () => {
         <a href="#" className="flex items-center gap-2">
           <span
             className={`font-serif text-2xl font-bold transition-colors duration-300 ${
-              isScrolled ? "text-primary" : "text-primary-foreground"
+              light ? "text-foreground" : isScrolled ? "text-primary" : "text-primary-foreground"
             }`}
           >
             Monteazul
@@ -45,17 +71,18 @@ const Header = () => {
         <nav className="hidden lg:flex items-center gap-8">
           {navLinks.map((link) => (
             <a
-              key={link.href}
-              href={link.href}
+              key={link.id}
+              href={`/#${link.id}`}
+              onClick={handleNavClick(link.id)}
               className={`text-sm font-medium transition-colors duration-300 hover:opacity-80 ${
-                isScrolled ? "text-foreground" : "text-primary-foreground"
+                light ? "text-foreground" : isScrolled ? "text-foreground" : "text-primary-foreground"
               }`}
             >
               {link.label}
             </a>
           ))}
-          <Button variant={isScrolled ? "luxury" : "hero"} size="lg">
-            Reservar Ahora
+          <Button asChild variant={light ? "luxury" : isScrolled ? "luxury" : "hero"} size="lg">
+            <Link to="/reserva">Reservar Ahora</Link>
           </Button>
         </nav>
 
@@ -66,37 +93,29 @@ const Header = () => {
           aria-label="Toggle menu"
         >
           {isMobileMenuOpen ? (
-            <X
-              className={`w-6 h-6 ${
-                isScrolled ? "text-foreground" : "text-primary-foreground"
-              }`}
-            />
+            <X className={`w-6 h-6 ${light ? "text-foreground" : isScrolled ? "text-foreground" : "text-primary-foreground"}`} />
           ) : (
-            <Menu
-              className={`w-6 h-6 ${
-                isScrolled ? "text-foreground" : "text-primary-foreground"
-              }`}
-            />
+            <Menu className={`w-6 h-6 ${light ? "text-foreground" : isScrolled ? "text-foreground" : "text-primary-foreground"}`} />
           )}
         </button>
       </div>
 
       {/* Mobile Menu */}
       {isMobileMenuOpen && (
-        <div className="lg:hidden absolute top-full left-0 right-0 bg-background/98 backdrop-blur-lg shadow-lg animate-fade-in">
+        <div className={`lg:hidden absolute top-full left-0 right-0 ${light ? "bg-white/98" : "bg-background/98 backdrop-blur-lg"} shadow-lg animate-fade-in`}>
           <nav className="container mx-auto px-4 py-6 flex flex-col gap-4">
             {navLinks.map((link) => (
               <a
-                key={link.href}
-                href={link.href}
-                className="text-foreground font-medium py-2 hover:text-primary transition-colors"
-                onClick={() => setIsMobileMenuOpen(false)}
+                key={link.id}
+                href={`/#${link.id}`}
+                className={`font-medium py-2 ${light ? "text-foreground" : "text-foreground hover:text-primary"} transition-colors`}
+                onClick={handleNavClick(link.id)}
               >
                 {link.label}
               </a>
             ))}
-            <Button variant="luxury" size="lg" className="mt-4">
-              Reservar Ahora
+            <Button asChild variant="luxury" size="lg" className="mt-4">
+              <Link to="/reserva">Reservar Ahora</Link>
             </Button>
           </nav>
         </div>

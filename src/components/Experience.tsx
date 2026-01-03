@@ -1,4 +1,4 @@
-import gardenImage from "@/assets/garden-terrace.jpg";
+import gardenImage from "@/assets/afueraporche.png";
 
 const Experience = () => {
   return (
@@ -20,8 +20,8 @@ const Experience = () => {
             <div className="space-y-6 text-muted-foreground text-lg leading-relaxed">
               <p>
                 Despierta con el canto de los pájaros. Siente la brisa suave del
-                campo castellano. Sumérgete en la piscina mientras el sol se
-                pone sobre los olivos.
+                campo castellano. Sumérgete en la calma de la piscina bajo el
+                último sol del atardecer.
               </p>
               <p>
                 Hotel Monteazul no es solo un lugar donde dormir. Es un refugio
@@ -44,9 +44,8 @@ const Experience = () => {
                 alt="Terraza y jardín de Hotel Monteazul al atardecer"
                 className="w-full h-[400px] lg:h-[500px] object-cover rounded-lg shadow-large"
               />
-              <div className="absolute -bottom-6 -left-6 bg-primary text-primary-foreground p-6 rounded-lg shadow-medium hidden sm:block">
-                <p className="font-serif text-2xl font-bold">10+</p>
-                <p className="text-sm opacity-90">Años de Experiencia</p>
+              <div className="absolute -bottom-4 -left-4 bg-primary text-primary-foreground p-3 rounded-lg shadow-medium hidden sm:block">
+                <p className="font-serif text-xl font-semibold">Tu Refugio de Confianza</p>
               </div>
             </div>
           </div>

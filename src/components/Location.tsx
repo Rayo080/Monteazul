@@ -10,14 +10,14 @@ const Location = () => {
           <div className="order-2 lg:order-1">
             <div className="relative rounded-lg overflow-hidden shadow-large h-[400px] lg:h-[500px]">
               <iframe
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3026.432!2d-3.3844!3d40.6953!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zNDDCsDQxJzQzLjEiTiAzwrAyMycwNC4wIlc!5e0!3m2!1ses!2ses!4v1699999999999!5m2!1ses!2ses"
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3025.2921028751334!2d-3.45154192342533!3d40.6943269389477!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0xd4389bae6c78a0d%3A0xaf516f30570110a3!2sHabitacion%20Monteazul!5e0!3m2!1ses!2ses!4v1714674000000!5m2!1ses!2ses"
                 width="100%"
                 height="100%"
-                style={{ border: 0 }}
-                allowFullScreen
+                style={{ border: 0, borderRadius: "15px" }}
+                allowFullScreen={true}
                 loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"
-                title="Ubicación de Hotel Monteazul"
+                title="Ubicación de Habitacion Monteazul"
               />
             </div>
           </div>
@@ -75,13 +75,35 @@ const Location = () => {
                 </div>
               </div>
             </div>
-            <div className="flex flex-col sm:flex-row gap-4">
-              <Button variant="luxury" size="lg">
-                Cómo Llegar
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button asChild variant="luxury" size="lg">
+                <a
+                  href="https://maps.google.com/?q=Habitacion+Monteazul+C.+Isla+del+Hierro,+286,+19170+El+Casar,+Guadalajara"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Cómo Llegar
+                </a>
               </Button>
-              <Button variant="outline" size="lg">
-                Traslado Aeropuerto
-              </Button>
+            </div>
+
+            {/* Airport transfer info block (placed below the 'Cómo Llegar' button) */}
+            <div className="mt-6 p-6 rounded-lg bg-primary-foreground/5 border border-border/50">
+              <h3 className="font-medium text-lg text-foreground mb-2">Servicio de Traslado al Aeropuerto</h3>
+              <p className="text-muted-foreground mb-4">
+                ¿Necesitas que te recojamos o te llevemos al aeropuerto? Ofrecemos servicio personalizado bajo petición para que tu única preocupación sea disfrutar.
+              </p>
+              <div>
+                <a
+                  href="https://wa.me/34651391228?text=Hola%2C%20me%20gustar%C3%ADa%20m%C3%A1s%20informaci%C3%B3n%20sobre%20el%20servicio%20de%20traslado%20al%20aeropuerto"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <button className="inline-flex items-center justify-center gap-2 bg-accent text-accent-foreground px-4 py-2 rounded-md font-medium shadow-md hover:shadow-lg">
+                    Consultar Tarifas y Horarios
+                  </button>
+                </a>
+              </div>
             </div>
           </div>
         </div>

@@ -2,33 +2,33 @@ import { Star, Quote } from "lucide-react";
 
 const testimonials = [
   {
-    name: "María García",
-    text: "No le falta nada, todo perfecto. Parece un hotel de 4-5 estrellas. La limpieza es impecable y Rubén siempre está atento a todo.",
+    name: "Mele Melero",
+    text: "Experiencia espectacular. No le falta un detalle y el anfitrión siempre está pendiente. La piscina es una pasada, un pedacito de paraíso cerca de Madrid.",
     rating: 5,
   },
   {
-    name: "Carlos Rodríguez",
-    text: "Paz, tranquilidad, un paraíso. La piscina y el jardín son increíbles. Perfecto para desconectar del estrés de Madrid.",
+    name: "Steven Vallejo",
+    text: "Nada que envidiar a un hotel de 4 o 5 estrellas. Silencioso, bonita decoración y sobre todo resaltar la calidad de los colchones.",
     rating: 5,
   },
   {
-    name: "Ana Martínez",
-    text: "Vinimos por una boda cercana y fue la mejor decisión. Las habitaciones son muy cómodas y el ambiente es precioso.",
+    name: "Milena Gomero",
+    text: "Súper limpio, ambientes amplios y la terraza con piscina es espectacular. Ideal para relajarse. ¡Volvería sin duda!",
     rating: 5,
   },
   {
-    name: "David & Miguel",
-    text: "Como pareja nos sentimos muy bienvenidos. El lugar es precioso, tranquilo y con todas las comodidades. Volveremos seguro.",
+    name: "Cristian Rustan",
+    text: "Lugar impecable y zona ajardinada con vistas únicas. La atención, limpieza e instrucciones de ingreso son excelentes.",
     rating: 5,
   },
   {
-    name: "Laura Fernández",
-    text: "Viajamos con nuestro perro y fue genial. Muy pet-friendly, con espacio para que corra. Limpieza excepcional.",
+    name: "Marie Moreno",
+    text: "La calidad es de hotel. Todo digital, práctico y pet friendly. Viajamos con mascotas y estuvimos muy a gusto.",
     rating: 5,
   },
   {
-    name: "Pedro Sánchez",
-    text: "Como nómada digital necesitaba WiFi estable y tranquilidad para trabajar. Lo encontré todo aquí. La piscina después del trabajo es un lujo.",
+    name: "MT P",
+    text: "Lo mejor de la zona. Vinimos para una boda y está muy cerca de la finca. Casa muy limpia, tranquila y recomendable.",
     rating: 5,
   },
 ];

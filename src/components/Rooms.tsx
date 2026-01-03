@@ -1,14 +1,15 @@
 import { Button } from "@/components/ui/button";
 import { Check } from "lucide-react";
-import roomImage from "@/assets/room-1.jpg";
+import roomImage from "@/assets/habitacionportada.png";
+import { Link } from "react-router-dom";
 
 const features = [
-  "Baño privado en cada habitación",
+  "Baño compartido / Privado (según habitación)",
   "Colchones de alta calidad hotelera",
   "Aire acondicionado individual",
   "WiFi de alta velocidad",
   "Ropa de cama premium",
-  "Acceso digital sin llaves",
+  "Acceso autónomo fácil",
 ];
 
 const Rooms = () => {
@@ -44,7 +45,7 @@ const Rooms = () => {
               className="w-full h-[400px] lg:h-[500px] object-cover rounded-lg shadow-large"
             />
             <div className="absolute top-6 right-6 bg-accent text-accent-foreground px-4 py-2 rounded-full font-medium text-sm shadow-medium">
-              Desde 75€/noche
+              Mejor precio garantizado
             </div>
           </div>
 
@@ -66,12 +67,9 @@ const Rooms = () => {
                 </li>
               ))}
             </ul>
-            <div className="flex flex-col sm:flex-row gap-4">
-              <Button variant="luxury" size="lg">
-                Ver Habitaciones y Precios
-              </Button>
-              <Button variant="outline" size="lg">
-                Consultar Disponibilidad
+            <div className="flex">
+              <Button asChild variant="luxury" size="lg">
+                <Link to="/reserva">Reservar Habitación</Link>
               </Button>
             </div>
           </div>

@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Check } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const benefits = [
   "Cancelación gratuita",
@@ -36,13 +37,10 @@ const FinalCTA = () => {
             ))}
           </div>
 
-          {/* CTAs */}
+          {/* CTAs: remove 'Consultar Disponibilidad' and center the primary button */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Button variant="hero" size="xl">
-              Consultar Disponibilidad
-            </Button>
-            <Button variant="heroOutline" size="xl">
-              Reservar Ahora
+            <Button asChild variant="heroOutline" size="xl">
+              <Link to="/reserva">Reservar Ahora</Link>
             </Button>
           </div>
         </div>

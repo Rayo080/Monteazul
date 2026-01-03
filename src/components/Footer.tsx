@@ -1,4 +1,5 @@
 import { MapPin, Phone, Mail, Instagram, Facebook } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const Footer = () => {
   return (
@@ -54,6 +55,11 @@ const Footer = () => {
                   Opiniones
                 </a>
               </li>
+              <li>
+                <Link to="/gestion-monteazul" className="hover:text-primary-foreground transition-colors">
+                  Admin
+                </Link>
+              </li>
             </ul>
           </div>
 
@@ -71,8 +77,8 @@ const Footer = () => {
               </li>
               <li className="flex items-center gap-3">
                 <Phone className="w-4 h-4 flex-shrink-0" />
-                <a href="tel:+34600000000" className="hover:text-primary-foreground transition-colors">
-                  +34 600 000 000
+                <a href="tel:+34651391228" className="hover:text-primary-foreground transition-colors">
+                  +34 651 39 12 28
                 </a>
               </li>
               <li className="flex items-center gap-3">

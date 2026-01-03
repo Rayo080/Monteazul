@@ -1,6 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Star, PawPrint, Heart, Shield } from "lucide-react";
-import heroImage from "@/assets/hero-pool.jpg";
+import heroImage from "@/assets/Piscina-Tumbonas.png";
+import { Link } from "react-router-dom";
+
 
 const Hero = () => {
   return (
@@ -41,17 +43,31 @@ const Hero = () => {
 
           {/* Subheadline */}
           <p className="animate-fade-up-delay-2 text-primary-foreground/90 text-lg md:text-xl max-w-2xl mx-auto mb-10 font-light">
-            Lujo, naturaleza y calma absoluta. Habitaciones con baño privado,
-            piscina exterior y jardín en El Casar, Guadalajara.
+            Lujo, naturaleza y calma absoluta. Habitaciones con encanto, piscina exterior y jardín en El Casar, Guadalajara
           </p>
 
           {/* CTAs */}
           <div className="animate-fade-up-delay-3 flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
-            <Button variant="hero" size="xl">
-              Consultar Disponibilidad
+            <Button asChild variant="hero" size="xl">
+              <Link to="/reserva">Consultar Disponibilidad</Link>
             </Button>
-            <Button variant="heroOutline" size="xl">
-              Ver Habitaciones
+            <Button asChild variant="heroOutline" size="xl">
+              <a
+                href="#habitaciones"
+                onClick={(e) => {
+                  // Smooth scroll if section exists on this page
+                  const el = document.getElementById("habitaciones");
+                  if (el) {
+                    e.preventDefault();
+                    el.scrollIntoView({ behavior: "smooth" });
+                  } else {
+                    // Fallback: navigate to home with hash (will jump)
+                    // allow default anchor behavior
+                  }
+                }}
+              >
+                Ver Habitaciones
+              </a>
             </Button>
           </div>
 

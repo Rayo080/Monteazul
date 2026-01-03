@@ -15,7 +15,7 @@ const amenities = [
   { icon: Waves, label: "Piscina Exterior", description: "Agua cristalina" },
   { icon: TreePine, label: "Jardín y Terraza", description: "Zona de relax" },
   { icon: Wifi, label: "WiFi Gratis", description: "Alta velocidad" },
-  { icon: Car, label: "Parking Gratuito", description: "Amplio y seguro" },
+  { icon: Car, label: "Fácil Aparcamiento", description: "En la misma puerta" },
   { icon: PawPrint, label: "Pet Friendly", description: "Mascotas bienvenidas" },
   { icon: Wind, label: "Aire Acondicionado", description: "Clima perfecto" },
   { icon: Plane, label: "Traslado Aeropuerto", description: "Bajo petición" },
