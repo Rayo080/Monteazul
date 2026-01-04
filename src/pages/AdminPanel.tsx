@@ -13,13 +13,55 @@ const AdminPanel = () => {
   const [stockPrivate, setStockPrivate] = useState<number>(0);
   const [stockShared, setStockShared] = useState<number>(0);
   const [loading, setLoading] = useState(false);
+  const [reservas, setReservas] = useState<any[]>([]);
+  const [mostrarCancelados, setMostrarCancelados] = useState(false);
   
   useEffect(() => {
     const p = window.prompt('Introduce la contraseña de administrador:');
     if (p === 'Monteazul2026') setAuthorized(true);
   }, []);
 
+  useEffect(() => {
+    const fetchReservas = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('reservas')
+          .select(`
+            cliente_nombre,
+            fecha_entrada,
+            fecha_salida,
+            habitacion_id,
+            adultos,
+            ninos,
+            mascota,
+            cant_privado,
+            cant_publico,
+            total,
+            estado,
+            codigo_reserva
+          `)
+          // Traemos todos los estados (confirmado, cancelada, etc.)
+          .order('fecha_entrada', { ascending: true });
+
+        if (error) throw error;
+        if (data) setReservas(data as any[]);
+      } catch (err) {
+        console.error('Error al cargar reservas:', err);
+      }
+    };
+    fetchReservas();
+  }, []);
+
   const maxStockForRoom = (type: 'private' | 'shared' | 'both') => (type === 'private' ? 1 : type === 'shared' ? 3 : 3);
+
+  // Función para formatear fecha 'YYYY-MM-DD' a 'DD/MM'
+  const formatearFecha = (fechaStr: string | null | undefined) => {
+    if (!fechaStr) return '';
+    const parts = String(fechaStr).split('-');
+    if (parts.length < 3) return fechaStr;
+    const [, month, day] = parts;
+    return `${day}/${month}`;
+  };
 
   const updateAvailability = async () => {
     if (!range?.from || !range?.to) return alert('Selecciona rango de fechas');
@@ -175,6 +217,93 @@ const AdminPanel = () => {
               </Button>
             </div>
           </div>
+
+          <div className="mt-8 overflow-x-auto p-4 bg-white rounded-xl shadow-lg">
+            <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
+              <h3 className="text-2xl font-bold text-emerald-900">Gestión de Reservas</h3>
+
+              {/* Botón para alternar cancelados */}
+              <button
+                onClick={() => setMostrarCancelados(!mostrarCancelados)}
+                className={`px-4 py-2 rounded-lg font-bold transition-all ${
+                  mostrarCancelados
+                    ? "bg-red-500 text-white shadow-inner"
+                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                }`}
+              >
+                {mostrarCancelados ? "Ver solo Confirmados" : "Mostrar Cancelados"}
+              </button>
+            </div>
+
+            <table className="w-full text-left border-collapse min-w-[1000px]">
+              <thead>
+                <tr className="border-b-2 border-gray-100 bg-gray-50 text-gray-700">
+                  <th className="py-4 px-3 text-sm font-bold uppercase">Código</th>
+                  <th className="py-4 px-3 text-sm font-bold uppercase">Cliente</th>
+                  <th className="py-4 px-3 text-sm font-bold uppercase">Estancia</th>
+                  <th className="py-4 px-3 text-sm font-bold uppercase">Personas</th>
+                  <th className="py-4 px-3 text-sm font-bold uppercase">Mascotas</th>
+                  <th className="py-4 px-3 text-sm font-bold uppercase">Habitaciones</th>
+                </tr>
+              </thead>
+              <tbody className="text-gray-800">
+                {reservas
+                  .filter((res) => (mostrarCancelados ? true : res.estado !== 'cancelada'))
+                  .map((res, i) => {
+                    const esCancelado = String(res?.estado ?? '').toLowerCase() === 'cancelada';
+
+                    return (
+                      <tr
+                        key={i}
+                        className={`border-b transition-all ${
+                          esCancelado
+                            ? "bg-red-50/50 border-l-4 border-l-red-500"
+                            : "hover:bg-emerald-50/30 border-l-4 border-l-transparent"
+                        }`}
+                      >
+                        {/* CÓDIGO DE RESERVA */}
+                        <td className="py-5 px-3 font-mono font-bold text-blue-700">{res.codigo_reserva}</td>
+
+                        {/* NOMBRE DEL CLIENTE */}
+                        <td className="py-5 px-3">
+                          <div className="text-lg font-semibold">{res.cliente_nombre}</div>
+                          {esCancelado && (
+                            <span className="inline-block px-2 py-0.5 rounded text-[10px] bg-red-600 text-white font-black uppercase">Cancelado</span>
+                          )}
+                        </td>
+
+                        {/* ESTANCIA */}
+                        <td className={`py-5 px-3 text-base font-medium ${esCancelado ? 'text-red-500' : 'text-gray-600'}`}>
+                          {formatearFecha(res.fecha_entrada)} al {formatearFecha(res.fecha_salida)}
+                        </td>
+
+                        {/* PERSONAS */}
+                        <td className="py-5 px-3 text-base">
+                          <span className="font-bold">{res.adultos ?? 0}</span> Ad.
+                          {res.ninos > 0 && <span> / <span className="font-bold">{res.ninos}</span> Niñ.</span>}
+                        </td>
+
+                        {/* MASCOTAS */}
+                        <td className="py-5 px-3 text-xl">{res.mascota ? '🐶' : <span className="text-gray-300 text-sm">No</span>}</td>
+
+                        {/* HABITACIONES */}
+                        <td className="py-5 px-3">
+                          <div className="flex flex-col gap-1">
+                            {res.cant_privado > 0 && (
+                              <span className="bg-emerald-100 text-emerald-800 px-2 py-1 rounded text-xs font-bold w-fit">{res.cant_privado} Privada(s)</span>
+                            )}
+                            {res.cant_publico > 0 && (
+                              <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-bold w-fit">{res.cant_publico} Compartida(s)</span>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+              </tbody>
+            </table>
+          </div>
+
         </div>
       </main>
       <Footer />
