@@ -8,9 +8,8 @@ import Index from "@/pages/Index";
 import Reserva from "@/pages/Reserva";
 import NotFound from "@/pages/NotFound";
 import InformacionReserva from "@/pages/InformacionReserva";
-import AdminPanel from "./pages/AdminPanel";
-import Exito from "./pages/Exito";
-
+import AdminPanel from "@/pages/AdminPanel";
+import Exito from "@/pages/exito"; 
 const queryClient = new QueryClient();
 
 function ScrollToTop() {
