@@ -123,7 +123,7 @@ serve(async (req) => {
             'Authorization': `Bearer ${resendKey}`,
           },
           body: JSON.stringify({
-            from: 'Monteazul <onboarding@resend.dev>',
+            from: 'Monteazul <reservas@monteazulhotel.com>',
             to: [reserva.email],
             subject: `🌲 Reserva Confirmada: ${reserva.codigo_reserva}`,
             html: `
