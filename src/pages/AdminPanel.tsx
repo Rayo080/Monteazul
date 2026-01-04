@@ -5,7 +5,7 @@ import Footer from "@/components/Footer";
 import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
 console.log("¿Existe supabase?:", supabase);
-const AdminPanel = () => {
+const adminPanel = () => {
   const [authorized, setAuthorized] = useState(false);
   const [range, setRange] = useState<any | undefined>(undefined);
   const [roomType, setRoomType] = useState<'private' | 'shared' | 'both'>('both');
@@ -182,4 +182,4 @@ const AdminPanel = () => {
   );
 };
 
-export default AdminPanel;
+export default adminPanel;

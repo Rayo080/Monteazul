@@ -8,8 +8,8 @@ import Index from "@/pages/Index";
 import Reserva from "@/pages/Reserva";
 import NotFound from "@/pages/NotFound";
 import InformacionReserva from "@/pages/InformacionReserva";
-import AdminPanel from "@/pages/AdminPanel";
-import Exito from "@/pages/exito"; 
+import adminPanel from "@/pages/adminPanel";
+import exito from "@/pages/exito"; 
 const queryClient = new QueryClient();
 
 function ScrollToTop() {
@@ -31,9 +31,9 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/reserva" element={<Reserva />} />
             <Route path="/informacion-reserva" element={<InformacionReserva />} />
-            <Route path="/exito" element={<Exito />} />
-            <Route path="/gestion-monteazul" element={<AdminPanel />} />
-            <Route path="/admin" element={<AdminPanel />} />
+            <Route path="/exito" element={<exito />} />
+            <Route path="/gestion-monteazul" element={<adminPanel />} />
+            <Route path="/admin" element={<adminPanel />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
