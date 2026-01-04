@@ -7,7 +7,7 @@ const roomImages: Record<string, string> = {
   suite: '/assets/fotohabitacioncompartida/Captura de pantalla 2026-01-02 234131.png',
 };
 
-export const exito = () => {
+export const Exito = () => {
   const [searchParams] = useSearchParams();
   const codigo = searchParams.get('codigo');
   const sessionId = searchParams.get('session_id');
@@ -156,4 +156,4 @@ export const exito = () => {
   );
 };
 
-export default exito;
+export default Exito;
