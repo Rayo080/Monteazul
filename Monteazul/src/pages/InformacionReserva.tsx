@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { CalendarDays, User, Mail, Phone, BedDouble, Hash, Home, CheckCircle } from "lucide-react";
+import { CalendarDays, User, Mail, Phone, BedDouble, Hash, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -118,30 +118,6 @@ const InformacionReserva: React.FC = () => {
             <div>
               <div className="text-xs text-gray-500">Fecha Salida</div>
               <div className="font-bold text-lg text-emerald-900">{reserva.fecha_salida}</div>
-            </div>
-          </div>
-          <div className="bg-white rounded-xl shadow p-5 flex items-center gap-4 md:col-span-2">
-            <div className="flex-1 flex items-center">
-              <span className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-emerald-50 mr-3">
-                <CheckCircle className="text-emerald-600" size={22} />
-              </span>
-              <div>
-                <div className="text-xs text-gray-500">Pagado</div>
-                <div className="font-bold text-lg text-emerald-900">{reserva.total ? `${reserva.total} EUR` : '-'}</div>
-              </div>
-            </div>
-            <div className="text-sm text-gray-600">
-              <div className="flex gap-6">
-                <div>
-                  <div className="text-xs text-gray-500">Base</div>
-                  <div className="font-medium">{reserva.total_base ? `${reserva.total_base} EUR` : '-'}</div>
-                </div>
-                <div>
-                  <div className="text-xs text-gray-500">Gestión</div>
-                  <div className="font-medium">{reserva.tasa_gestion ? `${reserva.tasa_gestion} EUR` : '-'}</div>
-                </div>
-              </div>
-              <div className="text-xs text-gray-500 mt-1">(Pagado = Base + Gestión)</div>
             </div>
           </div>
         </div>
@@ -278,4 +254,3 @@ const InformacionReserva: React.FC = () => {
 };
 
 export default InformacionReserva;
-

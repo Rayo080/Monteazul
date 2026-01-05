@@ -247,8 +247,6 @@ const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PK || 'pk_test_TU_C
     mascotas?: number;
     telefono?: string;
     notas?: string;
-    total_base: number;
-    tasa_gestion: number;
     total: number;
   }) => {
     const codigo = generarCodigoReserva();
@@ -263,8 +261,6 @@ const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PK || 'pk_test_TU_C
       fecha_salida: datos.fecha_salida,
       habitacion_id: datos.habitacion_id,
       total: Number(datos.total),
-      total_base: Number(datos.total_base),
-      tasa_gestion: Number(datos.tasa_gestion),
       adultos: datos.adultos ?? 1,
       ninos: datos.ninos ?? 0,
       mascota: (datos.mascotas ?? 0) > 0,
@@ -285,48 +281,42 @@ const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PK || 'pk_test_TU_C
       };
 
       try {
-        const payload = {
-          total: datos.total,
-          codigoReserva: codigo,
-          clienteEmail: datos.email,
-        };
-
-        // Intento 1: Usando el cliente oficial (Recomendado)
-        const { data, error: invokeErr } = await supabase.functions.invoke('create-checkout', {
-          body: payload,
+        const res: any = await supabase.functions.invoke('create-checkout', {
+          body: JSON.stringify(payload),
+          headers: { 'Content-Type': 'application/json' },
         } as any);
 
-        if (!invokeErr && data?.url) {
+        if (res?.error) {
+          throw res.error;
+        }
+
+        const data = res?.data ?? res;
+        if (data?.url) {
           window.location.href = data.url;
           return;
         }
 
-        // Intento 2: Fetch manual si el invoke falla (Plan B corregido)
-        console.warn('Intentando plan B por fallo en invoke:', invokeErr);
-        const projectHost = 'hhapopvdhddkpwpdubqi';
-        const fnUrl = `https://${projectHost}.supabase.co/functions/v1/create-checkout`;
-
-        const r = await fetch(fnUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-          },
-          body: JSON.stringify(payload),
-        });
-
-        const j = await r.json().catch(() => null);
-        if (r.ok && j?.url) {
-          window.location.href = j.url;
-          return;
-        } else {
-          throw new Error(j?.error || 'Error al conectar con la pasarela de pago');
+        // fallback: try direct fetch to functions domain
+      } catch (invokeErr) {
+        console.warn('functions.invoke failed:', invokeErr);
+        try {
+          const projectHost = 'hhapopvdhddkpwpdubqi'; // from supabaseClient.ts
+          const fnUrl = `https://${projectHost}.functions.supabase.co/create-checkout`;
+          const r = await fetch(fnUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+          const j = await r.json().catch(() => null);
+          if (r.ok && j?.url) {
+            window.location.href = j.url;
+            return;
+          }
+          throw new Error(`Function fetch failed: ${r.status} ${r.statusText} ${j && j.error ? '- ' + j.error : ''}`);
+        } catch (fetchErr) {
+          console.error('Edge function call failed', fetchErr);
+          throw fetchErr;
         }
-
-      } catch (err) {
-        console.error('Error crítico en el proceso:', err);
-        throw err;
       }
     } catch (err) {
       throw err;
@@ -357,10 +347,7 @@ const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PK || 'pk_test_TU_C
       const qty = roomSelections[bookingRoom]?.quantity || 0;
       const avg = bookingRoom === 'deluxe' ? avgPricePrivate : avgPriceShared;
       const unit = (range?.from && avg !== null && avg !== undefined) ? avg : rooms.find(r => r.id === bookingRoom)?.price ?? 0;
-
-      const total_base = Number(unit * nights * (qty > 0 ? qty : 1));
-      const tasa_gestion = Math.ceil((total_base * 0.035)+0.25);
-      const total = total_base + tasa_gestion;
+      const total = Number(unit * nights * (qty > 0 ? qty : 1));
 
       await procesarReserva({
         cliente_nombre: clienteNombre,
@@ -375,8 +362,6 @@ const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PK || 'pk_test_TU_C
         mascotas: roomSelections[bookingRoom!]?.petCount ?? 0,
         telefono: clienteTelefono || undefined,
         notas: clienteNotas || undefined,
-        total_base,
-        tasa_gestion,
         total,
       });
     } catch (err: any) {
@@ -404,15 +389,6 @@ const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PK || 'pk_test_TU_C
 
   
 
-
-  // Valores derivados para el desglose en el modal de reserva
-  const display_nights = range?.from && range?.to ? Math.max(1, Math.round((new Date(range.to).getTime() - new Date(range.from).getTime()) / (1000 * 60 * 60 * 24))) : 1;
-  const display_qty = bookingRoom ? (roomSelections[bookingRoom]?.quantity || 0) : 0;
-  const display_avg = bookingRoom === 'deluxe' ? avgPricePrivate : avgPriceShared;
-  const display_unit = (range?.from && display_avg !== null && display_avg !== undefined) ? display_avg : (bookingRoom ? (rooms.find(r => r.id === bookingRoom)?.price ?? 0) : 0);
-  const display_total_base = Number(display_unit * display_nights * (display_qty > 0 ? display_qty : 1));
-  const display_tasa_gestion = Math.ceil((display_total_base * 0.035) + 0.25);
-  const display_total = display_total_base + display_tasa_gestion;
 
   return (
     <div className="min-h-screen">
@@ -879,24 +855,7 @@ const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PK || 'pk_test_TU_C
               <strong>Fechas:</strong> {range?.from ? formatDateLocal(new Date(range.from)) : '-'} — {range?.to ? formatDateLocal(new Date(range.to)) : '-'}
             </div>
             <div className="text-sm">
-              <strong>Precio total:</strong> {display_total}€
-            </div>
-
-            {/* DESGLOSE DE PRECIOS */}
-            <div className="bg-gray-50 p-4 rounded-lg space-y-2 my-4 border border-gray-200">
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Precio estancia ({display_nights} noches):</span>
-                <span className="font-medium">{display_total_base}€</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Tasa de gestión:</span>
-                <span className="font-medium">{display_tasa_gestion}€</span>
-              </div>
-              <div className="flex justify-between border-t pt-2 mt-2">
-                <span className="font-bold text-gray-900">Total a pagar:</span>
-                <span className="font-bold text-blue-600 text-xl">{display_total}€</span>
-              </div>
-              <p className="text-[10px] text-gray-400 italic mt-1">* La tasa de gestión no es reembolsable en caso de cancelación.</p>
+              <strong>Precio total:</strong> {bookingTotal}€
             </div>
 
             <div>
