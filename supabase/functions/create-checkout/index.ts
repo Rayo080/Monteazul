@@ -1,5 +1,6 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import Stripe from "https://esm.sh/stripe@14.10.0?target=deno&no-check"
+import { serve } from "https://deno.land/std@0.208.0/http/server.ts"
+import Stripe from "https://esm.sh/stripe@14.16.0?target=deno"
+
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -13,7 +14,7 @@ serve(async (req) => {
     const { total, codigoReserva, clienteEmail } = await req.json()
 
     const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
-      apiVersion: '2023-10-16',
+     
       httpClient: Stripe.createFetchHttpClient(),
     })
 
