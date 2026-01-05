@@ -1,5 +1,5 @@
-import { serve } from "https://deno.land/std@0.208.0/http/server.ts"
-import Stripe from "https://esm.sh/stripe@14.16.0?target=deno"
+import { serve } from "https://deno.land/std@0.177.0/http/server.ts"
+import Stripe from "https://esm.sh/stripe@13.11.0?target=deno&no-check"
 
 
 const corsHeaders = {
