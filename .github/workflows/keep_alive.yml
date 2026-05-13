@@ -2,7 +2,7 @@ name: Wake up Supabase
 
 on:
   schedule:
-    - cron: '0 0 */2 * *' # Cambiado a cada 2 días para más seguridad
+    - cron: '0 0 */2 * *'
   workflow_dispatch:
 
 jobs:
@@ -11,5 +11,5 @@ jobs:
     steps:
       - name: Ping Supabase REST API
         run: |
-          curl -X GET "${{ secrets.SUPABASE_URL }}/rest/v1/" \
+          curl --fail -X GET "${{ secrets.SUPABASE_URL }}/rest/v1/" \
           -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}"
