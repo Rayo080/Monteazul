@@ -8,3 +8,4 @@ jobs:
     steps:
       - name: Ping Database
         run: curl ${{ secrets.SUPABASE_URL }}
+# activación
