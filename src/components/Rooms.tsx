@@ -23,6 +23,11 @@ import privada2 from "@/assets/fotohabitacionprivada/Captura de pantalla 2026-01
 import privada3 from "@/assets/fotohabitacionprivada/Captura de pantalla 2026-01-02 234355.png";
 import privada4 from "@/assets/fotohabitacionprivada/Captura de pantalla 2026-01-02 234416.png";
 import privada5 from "@/assets/fotohabitacionprivada/Captura de pantalla 2026-01-02 234437.png";
+import dp2 from "../../Monteazul/src/assets/fotohabitaciondeluxe/2.jpeg";
+import dp3 from "../../Monteazul/src/assets/fotohabitaciondeluxe/3.jpeg";
+import dp4 from "../../Monteazul/src/assets/fotohabitaciondeluxe/4.jpeg";
+import dp5 from "../../Monteazul/src/assets/fotohabitaciondeluxe/5.jpeg";
+import dp6 from "../../Monteazul/src/assets/fotohabitaciondeluxe/6.jpeg";
 
 const features = [
   "Baño compartido / Privado (según habitación)",
@@ -54,6 +59,16 @@ const Rooms = () => {
         { src: privada3, alt: "Habitación con baño privado 3" },
         { src: privada4, alt: "Habitación con baño privado 4" },
         { src: privada5, alt: "Habitación con baño privado 5" },
+      ],
+    },
+    {
+      title: "Habitación Deluxe con baño privado",
+      images: [
+        { src: dp2, alt: "Habitación Deluxe 1" },
+        { src: dp3, alt: "Habitación Deluxe 2" },
+        { src: dp4, alt: "Habitación Deluxe 3" },
+        { src: dp5, alt: "Habitación Deluxe 4" },
+        { src: dp6, alt: "Habitación Deluxe 5" },
       ],
     },
   ];

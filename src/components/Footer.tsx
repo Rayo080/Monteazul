@@ -84,10 +84,10 @@ const Footer = () => {
               <li className="flex items-center gap-3">
                 <Mail className="w-4 h-4 flex-shrink-0" />
                 <a
-                  href="mailto:hola@hotelmonteazul.com"
+                  href="mailto:monteazulhotel@gmail.com"
                   className="hover:text-primary-foreground transition-colors"
                 >
-                  hola@hotelmonteazul.com
+                  monteazulhotel@gmail.com
                 </a>
               </li>
             </ul>
@@ -98,19 +98,19 @@ const Footer = () => {
             <h4 className="font-medium mb-4">Información</h4>
             <ul className="space-y-3 text-primary-foreground/70 text-sm">
               <li>
-                <a href="#" className="hover:text-primary-foreground transition-colors">
+                <Link to="/politica-privacidad" className="hover:text-primary-foreground transition-colors">
                   Política de Privacidad
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#" className="hover:text-primary-foreground transition-colors">
+                <Link to="/terminos-condiciones" className="hover:text-primary-foreground transition-colors">
                   Términos y Condiciones
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#" className="hover:text-primary-foreground transition-colors">
+                <Link to="/politica-cancelacion" className="hover:text-primary-foreground transition-colors">
                   Política de Cancelación
-                </a>
+                </Link>
               </li>
               <li>
                 <a href="#" className="hover:text-primary-foreground transition-colors">

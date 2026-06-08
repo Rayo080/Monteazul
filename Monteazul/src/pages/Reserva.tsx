@@ -9,6 +9,14 @@ import { Link } from "react-router-dom";
 import { ChevronLeft } from "lucide-react";
 import room1 from "@/assets/habitacionportada.png";
 import room2 from "@/assets/habitacionportada2.png";
+import dp2 from "@/assets/fotohabitaciondeluxe/2.jpeg";
+import dp3 from "@/assets/fotohabitaciondeluxe/3.jpeg";
+import dp4 from "@/assets/fotohabitaciondeluxe/4.jpeg";
+import dp5 from "@/assets/fotohabitaciondeluxe/5.jpeg";
+import dp6 from "@/assets/fotohabitaciondeluxe/6.jpeg";
+import dp7 from "@/assets/fotohabitaciondeluxe/7.jpeg";
+import dp8 from "@/assets/fotohabitaciondeluxe/8.jpeg";
+import dp9 from "@/assets/fotohabitaciondeluxe/9.jpeg";
 import { DateRange } from "react-day-picker";
 import { supabase } from "@/supabaseClient";
 import useEmblaCarousel from 'embla-carousel-react';
@@ -55,6 +63,17 @@ const rooms = [
     petsAllowed: true,
     maxRooms: 3,
   },
+  {
+    id: "premium",
+    name: "Habitacion Deluxe con baño privado",
+    price: 150,
+    image: dp2,
+    desc: "Intimidad total con baño exclusivo, cama doble premium y vistas al entorno natural.",
+    maxAdults: 2,
+    maxChildren: 1,
+    petsAllowed: true,
+    maxRooms: 1,
+  },
 ];
 
 const Reserva = () => {
@@ -94,6 +113,7 @@ const Reserva = () => {
   const roomGalleries: Record<string, string[]> = {
     deluxe: [ph1, ph2, ph3, ph4, ph5],
     suite: [sh1, sh2, sh3],
+    premium: [dp2, dp3, dp4, dp5, dp6, dp7, dp8, dp9],
   };
   
   // Lógica para mostrar la fecha límite de cancelación (7 días antes del check-in)
@@ -127,6 +147,8 @@ const Reserva = () => {
   const [avgPricePrivate, setAvgPricePrivate] = useState<number | null>(null);
   const [availabilityShared, setAvailabilityShared] = useState<number | null>(null);
   const [avgPriceShared, setAvgPriceShared] = useState<number | null>(null);
+  const [availabilityDeluxe, setAvailabilityDeluxe] = useState<number | null>(5);
+  const [avgPriceDeluxe, setAvgPriceDeluxe] = useState<number | null>(null);
 
 // Stripe public key (set VITE_STRIPE_PK in your .env)
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PK || 'pk_test_TU_CLAVE_PUBLICA_AQUI');
@@ -158,6 +180,10 @@ const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PK || 'pk_test_TU_C
     if (!r?.from || !r?.to) {
       setAvailabilityPrivate(null);
       setAvailabilityShared(null);
+      setAvailabilityDeluxe(null);
+      setAvgPricePrivate(null);
+      setAvgPriceShared(null);
+      setAvgPriceDeluxe(null);
       return;
     }
     const start = formatDateLocal(new Date(r.from));
@@ -165,35 +191,45 @@ const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PK || 'pk_test_TU_C
     try {
       const { data, error } = await supabase
         .from("disponibilidad")
-        .select("stock_privada,stock_compartida,precio_privada,precio_compartida")
+        .select("stock_privada,stock_compartida,stock_deluxe,precio_privada,precio_compartida,precio_deluxe")
         .gte("date", start)
         .lt("date", end); // exclude checkout date so nights are start..end-1
       if (error) throw error;
       if (!data || !Array.isArray(data) || data.length === 0) {
         setAvailabilityPrivate(0);
         setAvailabilityShared(0);
+        setAvailabilityDeluxe(0);
         setAvgPricePrivate(null);
         setAvgPriceShared(null);
+        setAvgPriceDeluxe(null);
         return;
       }
       const privStocks = data.map((row: any) => Number(row.stock_privada ?? 0));
       const sharedStocks = data.map((row: any) => Number(row.stock_compartida ?? 0));
+      const deluxeStocks = data.map((row: any) => Number(row.stock_deluxe ?? 0));
       const privPrices = data.map((row: any) => Number(row.precio_privada ?? 0));
       const sharedPrices = data.map((row: any) => Number(row.precio_compartida ?? 0));
+      const deluxePrices = data.map((row: any) => Number(row.precio_deluxe ?? 0));
       const minPriv = privStocks.length ? Math.min(...privStocks) : 0;
       const minShared = sharedStocks.length ? Math.min(...sharedStocks) : 0;
+      const minDeluxe = deluxeStocks.length ? Math.min(...deluxeStocks) : 0;
       setAvailabilityPrivate(minPriv);
       setAvailabilityShared(minShared);
+      setAvailabilityDeluxe(minDeluxe);
       const avgPriv = privPrices.length ? privPrices.reduce((s: number, v: number) => s + v, 0) / privPrices.length : null;
       const avgShared = sharedPrices.length ? sharedPrices.reduce((s: number, v: number) => s + v, 0) / sharedPrices.length : null;
+      const avgDeluxe = deluxePrices.length ? deluxePrices.reduce((s: number, v: number) => s + v, 0) / deluxePrices.length : null;
       setAvgPricePrivate(avgPriv !== null ? Math.ceil(avgPriv) : null);
       setAvgPriceShared(avgShared !== null ? Math.ceil(avgShared) : null);
+      setAvgPriceDeluxe(avgDeluxe !== null ? Math.ceil(avgDeluxe) : null);
     } catch (err) {
       console.error("Error fetching availability", err);
       setAvailabilityPrivate(0);
       setAvailabilityShared(0);
+      setAvailabilityDeluxe(0);
       setAvgPricePrivate(null);
       setAvgPriceShared(null);
+      setAvgPriceDeluxe(null);
     }
   };
 
@@ -224,14 +260,17 @@ const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PK || 'pk_test_TU_C
     setRoomSelections((prev) => {
       const next = { ...prev } as typeof prev;
       for (const r of Object.keys(next)) {
-        const avail = r === 'deluxe' ? availabilityPrivate : availabilityShared;
+        let avail: number | null = availabilityShared;
+        if (r === 'deluxe') avail = availabilityPrivate;
+        else if (r === 'premium') avail = availabilityDeluxe;
+        
         if (avail !== null && avail !== undefined) {
           next[r] = { ...next[r], quantity: Math.min(next[r].quantity, avail) };
         }
       }
       return next;
     });
-  }, [availabilityPrivate, availabilityShared]);
+  }, [availabilityPrivate, availabilityShared, availabilityDeluxe]);
 
   // Helper: process reservation -> insert pending reservation and redirect to Stripe
   const procesarReserva = async (datos: {
@@ -342,10 +381,10 @@ const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PK || 'pk_test_TU_C
     try {
       const fecha_entrada = formatDateLocal(new Date(range.from));
       const fecha_salida = formatDateLocal(new Date(range.to));
-      const habitacion_id = bookingRoom === 'deluxe' ? 'private' : 'shared';
+      const habitacion_id = (bookingRoom === 'deluxe' || bookingRoom === 'premium') ? 'private' : 'shared';
       const nights = range?.from && range?.to ? Math.max(1, Math.round((new Date(range.to).getTime() - new Date(range.from).getTime()) / (1000 * 60 * 60 * 24))) : 1;
       const qty = roomSelections[bookingRoom]?.quantity || 0;
-      const avg = bookingRoom === 'deluxe' ? avgPricePrivate : avgPriceShared;
+      const avg = bookingRoom === 'deluxe' ? avgPricePrivate : (bookingRoom === 'premium' ? avgPriceDeluxe : avgPriceShared);
       const unit = (range?.from && avg !== null && avg !== undefined) ? avg : rooms.find(r => r.id === bookingRoom)?.price ?? 0;
       const total = Number(unit * nights * (qty > 0 ? qty : 1));
 
@@ -516,7 +555,9 @@ const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PK || 'pk_test_TU_C
               {range?.from ? (
                 filteredRooms
                   .filter((room) => {
-                    const avail = room.id === 'deluxe' ? availabilityPrivate : availabilityShared;
+                    let avail = availabilityShared;
+                    if (room.id === 'deluxe') avail = availabilityPrivate;
+                    else if (room.id === 'premium') avail = availabilityDeluxe;
                     // If a date range is selected and availability is 0, hide the room.
                     if (range?.from && (avail === 0)) return false;
                     return true;
@@ -548,7 +589,9 @@ const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PK || 'pk_test_TU_C
                       <div className="mt-3 flex justify-center">
                         <div className="inline-flex items-center gap-2 bg-emerald-50 text-emerald-800 border border-emerald-100 px-3 py-1 rounded-full shadow-sm text-sm">
                           {(() => {
-                            const avail = room.id === 'deluxe' ? availabilityPrivate : availabilityShared;
+                            let avail = availabilityShared;
+                            if (room.id === 'deluxe') avail = availabilityPrivate;
+                            else if (room.id === 'premium') avail = availabilityDeluxe;
                             const availText = avail ?? '-';
                             return <span className="font-medium">{availText} disponibles</span>;
                           })()}
@@ -564,7 +607,9 @@ const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PK || 'pk_test_TU_C
                       <span className="text-lg md:text-xl font-bold">{
                         (() => {
                           const qty = roomSelections[room.id]?.quantity || 0;
-                          const avg = room.id === 'deluxe' ? avgPricePrivate : avgPriceShared;
+                          let avg = avgPriceShared;
+                          if (room.id === 'deluxe') avg = avgPricePrivate;
+                          else if (room.id === 'premium') avg = avgPriceDeluxe;
                           if (range?.from && avg !== null && avg !== undefined) {
                             const total = avg * (qty > 0 ? qty : 1);
                             return `${total}€/noche`;
@@ -591,13 +636,17 @@ const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PK || 'pk_test_TU_C
                         <div className="w-8 text-center">{roomSelections[room.id].quantity}</div>
                         <button
                           className={"px-2 py-1 border rounded " + ((): string => {
-                            const avail = room.id === 'deluxe' ? availabilityPrivate : availabilityShared;
+                            let avail = availabilityShared;
+                            if (room.id === 'deluxe') avail = availabilityPrivate;
+                            else if (room.id === 'premium') avail = availabilityDeluxe;
                             const max = (avail !== null && avail !== undefined) ? avail : (room.maxRooms || 1);
                             return roomSelections[room.id].quantity >= max ? "opacity-50 cursor-not-allowed" : "";
                           })()}
                           onClick={() =>
                             setRoomSelections((p) => {
-                              const avail = room.id === 'deluxe' ? availabilityPrivate : availabilityShared;
+                              let avail = availabilityShared;
+                              if (room.id === 'deluxe') avail = availabilityPrivate;
+                              else if (room.id === 'premium') avail = availabilityDeluxe;
                               const max = (avail !== null && avail !== undefined) ? avail : (room.maxRooms || 1);
                               return ({
                                 ...p,

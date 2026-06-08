@@ -8,10 +8,11 @@ console.log("¿Existe supabase?:", supabase);
 const AdminPanel = () => {
   const [authorized, setAuthorized] = useState(false);
   const [range, setRange] = useState<any | undefined>(undefined);
-  const [roomType, setRoomType] = useState<'private' | 'shared' | 'both'>('both');
+  const [roomType, setRoomType] = useState<'private' | 'shared' | 'both' | 'deluxe'>('both');
   const [price, setPrice] = useState<number | ''>('');
   const [stockPrivate, setStockPrivate] = useState<number>(0);
   const [stockShared, setStockShared] = useState<number>(0);
+  const [stockDeluxe, setStockDeluxe] = useState<number>(0);
   const [loading, setLoading] = useState(false);
   const [reservas, setReservas] = useState<any[]>([]);
   const [mostrarCancelados, setMostrarCancelados] = useState(false);
@@ -84,7 +85,7 @@ const AdminPanel = () => {
 
       const updates: any = {};
       // Price fields
-     if (typeof price === 'number' && price > 0) {
+      if (typeof price === 'number' && price > 0) {
         if (roomType === 'both') {
           updates.precio_privada = price;
           updates.precio_compartida = price;
@@ -92,8 +93,9 @@ const AdminPanel = () => {
           updates.precio_privada = price;
         } else if (roomType === 'shared') {
           updates.precio_compartida = price;
+        } else if (roomType === 'deluxe') {
+          updates.precio_deluxe = price;
         }
-      
       }
 
       // Stock fields
@@ -104,6 +106,8 @@ const AdminPanel = () => {
         updates.stock_privada = stockPrivate;
       } else if (roomType === 'shared') {
         updates.stock_compartida = stockShared;
+      } else if (roomType === 'deluxe') {
+        updates.stock_deluxe = stockDeluxe;
       }
 
       if (Object.keys(updates).length === 0) {
@@ -115,8 +119,10 @@ const AdminPanel = () => {
       // Ensure numeric types before sending to the DB
       if (updates.precio_privada !== undefined) updates.precio_privada = Number(updates.precio_privada);
       if (updates.precio_compartida !== undefined) updates.precio_compartida = Number(updates.precio_compartida);
+      if (updates.precio_deluxe !== undefined) updates.precio_deluxe = Number(updates.precio_deluxe);
       if (updates.stock_privada !== undefined) updates.stock_privada = Number(updates.stock_privada);
       if (updates.stock_compartida !== undefined) updates.stock_compartida = Number(updates.stock_compartida);
+      if (updates.stock_deluxe !== undefined) updates.stock_deluxe = Number(updates.stock_deluxe);
 
       // Update rows in date range and request count of affected rows
       const { data, error, count } = await supabase
@@ -170,9 +176,10 @@ const AdminPanel = () => {
               <div>
                 <label className="block font-medium">¿Qué habitación?</label>
                 <select className="w-full p-3 border rounded" value={roomType} onChange={(e) => setRoomType(e.target.value as any)}>
-                  <option value="both">Ambas</option>
+                  <option value="both">Ambas (Privada + Compartida)</option>
                   <option value="private">Privada</option>
                   <option value="shared">Compartida</option>
+                  <option value="deluxe">Habitación Deluxe</option>
                 </select>
               </div>
 
@@ -195,6 +202,12 @@ const AdminPanel = () => {
                       <input type="range" min={0} max={maxStockForRoom('shared')} value={stockShared} onChange={(e) => setStockShared(Number(e.target.value))} />
                       <div className="text-sm mt-1">{stockShared} disponibles</div>
                     </div>
+                  </div>
+                ) : roomType === 'deluxe' ? (
+                  <div>
+                    <div className="text-sm mb-1">Deluxe (máx. 1)</div>
+                    <input type="range" min={0} max={maxStockForRoom('private')} value={stockDeluxe} onChange={(e) => setStockDeluxe(Number(e.target.value))} />
+                    <div className="text-sm mt-1">{stockDeluxe} disponibles</div>
                   </div>
                 ) : (
                   <div>

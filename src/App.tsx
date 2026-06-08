@@ -9,7 +9,10 @@ import Reserva from "@/pages/Reserva";
 import NotFound from "@/pages/NotFound";
 import InformacionReserva from "@/pages/InformacionReserva";
 import AdminPanel from "@/pages/AdminPanel";
-import Exito from "@/pages/Exito"; 
+import Exito from "@/pages/Exito";
+import PoliticaPrivacidad from "@/pages/PoliticaPrivacidad";
+import TerminosCondiciones from "@/pages/TerminosCondiciones";
+import PoliticaCancelacion from "@/pages/PoliticaCancelacion";
 const queryClient = new QueryClient();
 
 function ScrollToTop() {
@@ -32,6 +35,9 @@ const App = () => (
             <Route path="/reserva" element={<Reserva />} />
             <Route path="/informacion-reserva" element={<InformacionReserva />} />
             <Route path="/exito" element={<Exito />} />
+            <Route path="/politica-privacidad" element={<PoliticaPrivacidad />} />
+            <Route path="/terminos-condiciones" element={<TerminosCondiciones />} />
+            <Route path="/politica-cancelacion" element={<PoliticaCancelacion />} />
             <Route path="/gestion-monteazul" element={<AdminPanel />} />
             <Route path="/admin" element={<AdminPanel />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

@@ -57,7 +57,7 @@ const Header: React.FC<{ light?: boolean }> = ({ light = false }) => {
       }`}
     >
       <div className="container mx-auto px-4 flex items-center justify-between">
-        <a href="#" className="flex items-center gap-2">
+        <Link to="/" className="flex items-center gap-2">
           <span
             className={`font-serif text-2xl font-bold transition-colors duration-300 ${
               light ? "text-foreground" : isScrolled ? "text-primary" : "text-primary-foreground"
@@ -65,7 +65,7 @@ const Header: React.FC<{ light?: boolean }> = ({ light = false }) => {
           >
             Monteazul
           </span>
-        </a>
+        </Link>
 
         {/* Desktop Navigation */}
         <nav className="hidden lg:flex items-center gap-8">

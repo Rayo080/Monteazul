@@ -11,7 +11,7 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
   try {
-    const { total, codigoReserva, clienteEmail } = await req.json()
+    const { total, codigoReserva, clienteEmail, habitacionNombre, cantidad, noches, totalBase } = await req.json()
 
     const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
      
@@ -23,7 +23,10 @@ serve(async (req) => {
       line_items: [{
         price_data: {
           currency: 'eur',
-          product_data: { name: `Reserva Monteazul - ${codigoReserva}` },
+          product_data: {
+            name: `Reserva Monteazul - ${codigoReserva}`,
+            description: `${cantidad || 1} x ${habitacionNombre || 'Habitación'} · ${noches || 1} noches`,
+          },
           unit_amount: Math.round(total * 100),
         },
         quantity: 1,
@@ -32,7 +35,11 @@ serve(async (req) => {
       success_url: `${req.headers.get('origin')}/exito?codigo=${codigoReserva}`,
       cancel_url: `${req.headers.get('origin')}/reserva`,
       metadata: {
-        codigoReserva: codigoReserva
+        codigoReserva: codigoReserva,
+        habitacionNombre: habitacionNombre || '',
+        cantidad: String(cantidad || 1),
+        noches: String(noches || 1),
+        totalBase: String(totalBase || 0),
       },
     })
 
