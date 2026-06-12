@@ -115,6 +115,8 @@
         });
 
         const datos = await response.json();
+        console.log('Response status:', response.status, 'Data:', datos);
+        
         if (datos.length > 0) {
           if (recordar) {
             localStorage.setItem('monteazul_logged', 'true');
@@ -123,10 +125,12 @@
           }
           mostrarMenuPrincipal();
         } else {
-          alert("⚠️ Usuario o contraseña incorrectos.");
+          alert("⚠️ Usuario o contraseña incorrectos.\n\nSi el problema persiste, contacta al administrador.");
+          console.warn('Login falló: no se encontraron registros para el usuario', user);
         }
       } catch (error) {
-        alert("Error de conexión con el servidor.");
+        console.error('Error de login:', error);
+        alert("❌ Error de conexión con el servidor.\n\nDetalles: " + error.message);
       }
     }
 
