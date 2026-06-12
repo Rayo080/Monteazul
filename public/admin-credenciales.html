@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Panel Credenciales - Monteazul</title>
+  <style>
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: #f4f7f6; margin: 0; padding: 12px; color: #111827; }
+    .container { max-width: 1200px; margin: 0 auto; background: white; padding: 20px; border-radius: 16px; box-shadow: 0 20px 60px rgba(15,23,42,0.08); }
+    h2 { margin-top: 0; color: #111827; display: flex; flex-direction: column; gap: 14px; }
+    .btn-refresh { background: #2563eb; color: white; border: none; padding: 12px 18px; border-radius: 12px; font-weight: 700; cursor: pointer; font-size: 14px; width: 100%; max-width: 220px; }
+    .btn-refresh:hover { background: #1d4ed8; }
+
+    .aviso-rgpd { background: #fefce8; border: 1px solid #fde68a; color: #92400e; padding: 14px; border-radius: 12px; font-size: 14px; margin-bottom: 20px; line-height: 1.7; }
+
+    .reserva-card { background: #ffffff; border: 1px solid #e5e7eb; border-radius: 18px; padding: 22px; margin-bottom: 20px; box-shadow: 0 18px 40px rgba(15,23,42,0.06); }
+    .reserva-header { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 16px; align-items: flex-start; margin-bottom: 18px; }
+    .reserva-title { margin: 0; font-size: 20px; color: #0f172a; }
+    .reserva-meta { display: grid; grid-template-columns: repeat(2, minmax(160px, auto)); gap: 10px; }
+    .chip { display: inline-flex; align-items: center; gap: 8px; padding: 10px 14px; border-radius: 999px; font-size: 13px; font-weight: 700; }
+    .chip-hab { background: #dbeafe; color: #1d4ed8; }
+    .chip-pax { background: #f5d0fe; color: #7c3aed; }
+    .chip-date { background: #f8fafc; color: #475569; }
+
+    .huespedes-lista { width: 100%; border-collapse: collapse; margin-top: 12px; }
+    .huespedes-lista th, .huespedes-lista td { padding: 14px 16px; border-bottom: 1px solid #e2e8f0; }
+    .huespedes-lista th { background: #f8fafc; color: #475569; font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; text-align: left; }
+    .huespedes-lista td { color: #334155; font-size: 14px; vertical-align: middle; }
+    .huespedes-lista td a { color: #2563eb; text-decoration: none; font-weight: 700; }
+    .huespedes-lista td a:hover { text-decoration: underline; }
+    .firma-thumbnail { max-height: 40px; border-radius: 10px; border: 1px solid #e2e8f0; }
+    .texto-secundario { display: block; color: #64748b; font-size: 13px; margin-top: 6px; }
+    .no-data { color: #64748b; font-style: italic; }
+    .btn-delete { background: #dc2626; color: white; border: none; padding: 6px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+    .btn-delete:hover { background: #b91c1c; }
+
+    @media (max-width: 860px) {
+      .container { padding: 16px; }
+      .btn-refresh { width: 100%; }
+      .reserva-header { flex-direction: column; align-items: stretch; }
+      .reserva-meta { grid-template-columns: 1fr; }
+      .huespedes-lista th, .huespedes-lista td { display: block; width: 100%; }
+      .huespedes-lista tr { border: 1px solid #e2e8f0; border-radius: 14px; margin-bottom: 14px; padding: 12px; display: block; }
+      .huespedes-lista th { display: none; }
+      .huespedes-lista td { border-bottom: none; padding: 10px 0; }
+      .huespedes-lista td::before { content: attr(data-label); display: block; color: #475569; font-size: 12px; font-weight: 700; margin-bottom: 6px; }
+    }
+  </style>
+</head>
+<body>
+
+<script>
+  if (localStorage.getItem('monteazul_logged') !== 'true' && sessionStorage.getItem('monteazul_logged') !== 'true') {
+    window.location.href = '/admin.html';
+  }
+</script>
+
+<div class="container">
+  <h2>
+    <span>🪪 Panel de Credenciales Agrupado</span>
+    <button class="btn-refresh" onclick="cargarDatosVinculados()">🔄 Actualizar Panel</button>
+  </h2>
+
+  <div class="aviso-rgpd">
+    🛡️ Las reservas se agrupan por <strong>localizador</strong>. Si varios huéspedes pertenecen al mismo grupo, se muestran juntos en una misma tarjeta de reserva.
+  </div>
+
+  <div id="panel-reservas">
+    <div style="text-align:center; color:#64748b; padding:20px;">Cargando registros de Supabase...</div>
+  </div>
+</div>
+
+<script>
+  const SUPABASE_URL = "https://hhapopvdhddkpwpdubqi.supabase.co";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhoYXBvcHZkaGRka3B3cGR1YnFpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjczODUzOTEsImV4cCI6MjA4Mjk2MTM5MX0.bD-V_ywVOlWpw8jr5jeny52bBq36fBRA9gsvGdHv1qI";
+
+  window.addEventListener('DOMContentLoaded', cargarDatosVinculados);
+
+  async function cargarDatosVinculados() {
+    const panel = document.getElementById('panel-reservas');
+    try {
+      const headers = {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+      };
+
+      const [resHuespedes, resCheckin] = await Promise.all([
+        fetch(`${SUPABASE_URL}/rest/v1/partes_huespedes?select=localizador,nombre_completo,documento_identidad,firma_digital,fecha_registro,foto_documento_url&order=localizador,fecha_registro.desc`, { headers }),
+        fetch(`${SUPABASE_URL}/rest/v1/enlaces_checkin?select=localizador,habitacion_tipo,numero_huespedes,fecha_entrada,fecha_salida&order=localizador`, { headers })
+      ]);
+
+      if (!resHuespedes.ok || !resCheckin.ok) {
+        const errorTexto = `${await resHuespedes.text()} | ${await resCheckin.text()}`;
+        throw new Error(errorTexto);
+      }
+
+      const huespedes = await resHuespedes.json();
+      const checkins = await resCheckin.json();
+
+      if (!checkins.length) {
+        panel.innerHTML = `<div style="text-align:center; color:#64748b; padding:20px;">No hay reservas activas en enlaces_checkin.</div>`;
+        return;
+      }
+
+      const reservas = {};
+      checkins.forEach(checkin => {
+        const key = checkin.localizador?.trim() || 'SIN_LOCALIZADOR';
+        reservas[key] = { ...checkin, huespedes: [] };
+      });
+
+      huespedes.forEach(h => {
+        const key = h.localizador?.trim() || 'SIN_LOCALIZADOR';
+        if (!reservas[key]) {
+          reservas[key] = { localizador: key, habitacion_tipo: 'No registrada', numero_huespedes: '---', fecha_entrada: null, fecha_salida: null, huespedes: [] };
+        }
+        reservas[key].huespedes.push(h);
+      });
+
+      panel.innerHTML = '';
+      Object.values(reservas).forEach(reserva => {
+        const entrada = reserva.fecha_entrada ? new Date(reserva.fecha_entrada).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '---';
+        const salida = reserva.fecha_salida ? new Date(reserva.fecha_salida).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '---';
+
+        const filasHuespedes = reserva.huespedes.length
+          ? reserva.huespedes.map(h => {
+              const fReg = h.fecha_registro ? new Date(h.fecha_registro).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' }) + ' ' + new Date(h.fecha_registro).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : '---';
+              return `
+                <tr>
+                  <td data-label="Nombre Ocupante">${h.nombre_completo || '---'}<br><span class="texto-secundario">Reg: ${fReg}</span></td>
+                  <td data-label="Nº Documento"><code>${h.documento_identidad || '---'}</code></td>
+                  <td data-label="Foto Identidad">${h.foto_documento_url ? `<a href="${h.foto_documento_url}" target="_blank">Ver Documento</a>` : '<span class="no-data">Borrado RGPD</span>'}</td>
+                  <td data-label="Firma">${h.firma_digital ? `<img src="${h.firma_digital}" class="firma-thumbnail" alt="Firma">` : '<span class="no-data">Sin firma</span>'}</td>
+                  <td data-label="Acciones"><button class="btn-delete" onclick="eliminarRegistro('${h.id}')">Eliminar</button></td>
+                </tr>
+              `;
+            }).join('')
+          : `<tr><td colspan="5" class="no-data">Ningún huésped registrado todavía para este localizador.</td></tr>`;
+
+        const card = document.createElement('div');
+        card.className = 'reserva-card';
+        card.innerHTML = `
+          <div class="reserva-header">
+            <div>
+              <h3 class="reserva-title">Localizador: ${reserva.localizador || '---'}</h3>
+              <div class="reserva-meta">
+                <span class="chip chip-hab">${reserva.habitacion_tipo || 'Multi-Habitación'}</span>
+                <span class="chip chip-pax">${reserva.numero_huespedes || '---'} Adulto/s</span>
+              </div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 10px; align-items: flex-end;">
+              <div>
+                <span class="chip chip-date">Entrada: ${entrada}</span>
+                <span class="chip chip-date">Salida: ${salida}</span>
+              </div>
+              <button class="btn-delete" onclick="eliminarReserva('${reserva.localizador}')">Eliminar Reserva Completa</button>
+            </div>
+          </div>
+          <table class="huespedes-lista">
+            <thead>
+              <tr>
+                <th>Nombre Ocupante</th>
+                <th>Nº Documento</th>
+                <th>Foto Identidad</th>
+                <th>Firma</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${filasHuespedes}
+            </tbody>
+          </table>
+        `;
+
+        panel.appendChild(card);
+      });
+    } catch (error) {
+      console.error(error);
+      panel.innerHTML = `<div style="text-align:center; color:#dc2626; padding:20px;">⚠️ Error cargando reservas: ${error.message}</div>`;
+    }
+  }
+
+  async function eliminarRegistro(id) {
+    if (!confirm("¿Estás seguro de eliminar este registro? Esta acción no se puede deshacer.")) return;
+
+    try {
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/partes_huespedes?id=eq.${id}`, {
+        method: 'DELETE',
+        headers: {
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          'Prefer': 'return=minimal'
+        }
+      });
+
+      if (response.status >= 200 && response.status < 300) {
+        alert("Registro eliminado correctamente.");
+        location.reload();
+      } else {
+        alert("Error al eliminar el registro. Por favor, intenta de nuevo.");
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      alert("Problemas de conexión con el servidor.");
+    }
+  }
+
+  async function eliminarReserva(localizador) {
+    if (!confirm("¿Estás seguro de que quieres eliminar TODA la reserva: " + localizador + "?\n\nEsta acción borrará todos los huéspedes y la reserva completa. No se puede deshacer.")) return;
+
+    try {
+      // 1. Borrar primero todos los huéspedes asociados
+      await fetch(`${SUPABASE_URL}/rest/v1/partes_huespedes?localizador=eq.${encodeURIComponent(localizador.trim())}`, {
+        method: 'DELETE',
+        headers: {
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          'Prefer': 'return=minimal'
+        }
+      });
+
+      // 2. Luego borrar el enlace principal
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/enlaces_checkin?localizador=eq.${encodeURIComponent(localizador.trim())}`, {
+        method: 'DELETE',
+        headers: {
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          'Prefer': 'return=minimal'
+        }
+      });
+
+      if (response.status >= 200 && response.status < 300) {
+        alert("Reserva eliminada por completo.");
+        location.reload();
+      } else {
+        alert("Error al eliminar la reserva. Por favor, intenta de nuevo.");
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      alert("Problemas de conexión con el servidor.");
+    }
+  }
+</script>
+</body>
+</html>

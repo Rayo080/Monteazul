@@ -6,7 +6,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
 console.log("¿Existe supabase?:", supabase);
 const AdminPanel = () => {
-  const [authorized, setAuthorized] = useState(false);
+  const [authorized, setAuthorized] = useState(true);
   const [range, setRange] = useState<any | undefined>(undefined);
   const [roomType, setRoomType] = useState<'private' | 'shared' | 'both' | 'deluxe'>('both');
   const [price, setPrice] = useState<number | ''>('');
@@ -16,11 +16,13 @@ const AdminPanel = () => {
   const [loading, setLoading] = useState(false);
   const [reservas, setReservas] = useState<any[]>([]);
   const [mostrarCancelados, setMostrarCancelados] = useState(false);
-  
   useEffect(() => {
-    const p = window.prompt('Introduce la contraseña de administrador:');
-    if (p === 'Monteazul2026') setAuthorized(true);
+    if (localStorage.getItem('monteazul_logged') !== 'true' && sessionStorage.getItem('monteazul_logged') !== 'true') {
+      window.location.href = '/admin.html';
+    }
   }, []);
+  
+  // Removed admin password prompt to allow public access as requested.
 
   useEffect(() => {
     const fetchReservas = async () => {

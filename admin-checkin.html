@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Generador Multi-Habitación - Monteazul</title>
+  <style>
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f4f8; margin: 0; padding: 20px; color: #333; }
+    .card { max-width: 640px; margin: 30px auto; background: white; padding: 30px; border-radius: 14px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+    h2 { margin-top: 0; color: #2c3e50; border-bottom: 2px solid #eef2f5; padding-bottom: 12px; }
+    .form-group { margin-bottom: 20px; }
+    label { display: block; margin-bottom: 6px; font-weight: 600; color: #4a5568; font-size: 14px; }
+    input[type="text"], input[type="date"], input[type="number"] { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; font-size: 15px; }
+    .stock-container { background: #f8fafc; padding: 16px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 20px; }
+    .stock-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #e2e8f0; }
+    .stock-row:last-child { border-bottom: none; }
+    .room-info { display: flex; flex-direction: column; }
+    .room-name { font-weight: bold; color: #1e293b; }
+    .room-max { font-size: 12px; color: #64748b; }
+    .counter-controls { display: flex; align-items: center; gap: 12px; }
+    .btn-counter { background: #cbd5e1; border: none; width: 34px; height: 34px; border-radius: 50%; font-size: 18px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+    .btn-counter:hover { background: #94a3b8; color: white; }
+    .counter-value { font-size: 16px; font-weight: bold; min-width: 24px; text-align: center; }
+    .btn-submit { background: #2ecc71; color: white; border: none; padding: 14px; width: 100%; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 6px rgba(46, 204, 113, 0.18); }
+    .btn-submit:hover { background: #27ae60; }
+    .resultado { margin-top: 26px; padding: 18px; background: #e8f8f5; border-left: 5px solid #2ecc71; border-radius: 10px; display: none; word-break: break-all; }
+    .btn-copy { background: #3498db; color: white; border: none; padding: 8px 14px; border-radius: 6px; font-size: 13px; cursor: pointer; margin-top: 12px; font-weight: bold; }
+    .btn-copy:hover { background: #2563eb; }
+    .grid-2 { display: grid; gap: 16px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    @media (max-width: 640px) { .grid-2 { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+
+<script>
+  if (localStorage.getItem('monteazul_logged') !== 'true' && sessionStorage.getItem('monteazul_logged') !== 'true') {
+    window.location.href = 'admin.html';
+  }
+</script>
+
+<div class="card">
+  <h2>🔑 Creador de Enlaces Múltiples</h2>
+
+  <div class="form-group">
+    <label for="titular">Nombre del Titular de la Reserva</label>
+    <input type="text" id="titular" placeholder="Ej. Juan Pérez">
+  </div>
+
+  <div class="form-group">
+    <label>Habitaciones reservadas (Stock disponible)</label>
+    <div class="stock-container">
+      <div class="stock-row">
+        <div class="room-info">
+          <span class="room-name">👑 Habitación Deluxe</span>
+          <span class="room-max">Máximo disponible: 1</span>
+        </div>
+        <div class="counter-controls">
+          <button class="btn-counter" type="button" onclick="cambiarCantidad('deluxe', -1)">-</button>
+          <span id="cant-deluxe" class="counter-value">0</span>
+          <button class="btn-counter" type="button" onclick="cambiarCantidad('deluxe', 1)">+</button>
+        </div>
+      </div>
+      <div class="stock-row">
+        <div class="room-info">
+          <span class="room-name">🚪 Habitación Privada</span>
+          <span class="room-max">Máximo disponible: 1</span>
+        </div>
+        <div class="counter-controls">
+          <button class="btn-counter" type="button" onclick="cambiarCantidad('privado', -1)">-</button>
+          <span id="cant-privado" class="counter-value">0</span>
+          <button class="btn-counter" type="button" onclick="cambiarCantidad('privado', 1)">+</button>
+        </div>
+      </div>
+      <div class="stock-row">
+        <div class="room-info">
+          <span class="room-name">👥 Habitación Compartida</span>
+          <span class="room-max">Máximo disponible: 3</span>
+        </div>
+        <div class="counter-controls">
+          <button class="btn-counter" type="button" onclick="cambiarCantidad('compartido', -1)">-</button>
+          <span id="cant-compartido" class="counter-value">0</span>
+          <button class="btn-counter" type="button" onclick="cambiarCantidad('compartido', 1)">+</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="form-group">
+    <label for="huespedes">Total Huéspedes Autorizados (Suma total)</label>
+    <input type="number" id="huespedes" placeholder="Ej. 4" value="1" min="1">
+  </div>
+
+  <div class="grid-2">
+    <div class="form-group">
+      <label for="entrada">Fecha Entrada</label>
+      <input type="date" id="entrada">
+    </div>
+    <div class="form-group">
+      <label for="salida">Fecha Salida</label>
+      <input type="date" id="salida">
+    </div>
+  </div>
+
+  <button class="btn-submit" type="button" onclick="generarEnlaceUnico()">🚀 Generar Enlace Único</button>
+
+  <div id="resultado-box" class="resultado">
+    <strong>¡Enlace multireserva listo! Copia esto:</strong>
+    <p id="enlace-url" style="margin: 8px 0; font-weight: bold; color: #16a085;"></p>
+    <button class="btn-copy" type="button" onclick="copiarAlPortapapeles()">📋 Copiar Enlace</button>
+  </div>
+</div>
+
+<script>
+  const SUPABASE_URL = "https://hhapopvdhddkpwpdubqi.supabase.co";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhoYXBvcHZkaGRka3B3cGR1YnFpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjczODUzOTEsImV4cCI6MjA4Mjk2MTM5MX0.bD-V_ywVOlWpw8jr5jeny52bBq36fBRA9gsvGdHv1qI";
+
+  const STOCKS = { deluxe: 1, privado: 1, compartido: 3 };
+  const CANTIDADES = { deluxe: 0, privado: 0, compartido: 0 };
+
+  function cambiarCantidad(tipo, valor) {
+    const nuevaCant = CANTIDADES[tipo] + valor;
+    if (nuevaCant >= 0 && nuevaCant <= STOCKS[tipo]) {
+      CANTIDADES[tipo] = nuevaCant;
+      document.getElementById(`cant-${tipo}`).innerText = nuevaCant;
+    }
+  }
+
+  function generarLocalizador() {
+    return `MA-${Math.floor(1000 + Math.random() * 9000)}`;
+  }
+
+  async function generarEnlaceUnico() {
+    const titular = document.getElementById('titular').value.trim();
+    const huespedes = document.getElementById('huespedes').value.trim();
+    const entrada = document.getElementById('entrada').value;
+    const salida = document.getElementById('salida').value;
+
+    const habitacionesSeleccionadas = [];
+    if (CANTIDADES.deluxe > 0) habitacionesSeleccionadas.push(`${CANTIDADES.deluxe} Deluxe`);
+    if (CANTIDADES.privado > 0) habitacionesSeleccionadas.push(`${CANTIDADES.privado} Privado`);
+    if (CANTIDADES.compartido > 0) habitacionesSeleccionadas.push(`${CANTIDADES.compartido} Compartido`);
+
+    if (!titular || habitacionesSeleccionadas.length === 0 || !entrada || !salida) {
+      alert('Por favor, rellena el titular, fechas y selecciona al menos una habitación.');
+      return;
+    }
+
+    const desgloseHabitaciones = habitacionesSeleccionadas.join(', ');
+    const localizadorUnico = generarLocalizador();
+    const totalHuespedes = parseInt(huespedes, 10) || 1;
+
+    try {
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/enlaces_checkin`, {
+        method: 'POST',
+        headers: {
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=representation'
+        },
+        body: JSON.stringify({
+          localizador: localizadorUnico,
+          nombre_titular: titular,
+          habitacion_tipo: desgloseHabitaciones,
+          numero_huespedes: totalHuespedes,
+          fecha_entrada: entrada,
+          fecha_salida: salida,
+          estado: 'pendiente'
+        })
+      });
+
+      if (!response.ok) throw new Error('Error guardando el enlace múltiple en Supabase.');
+
+      const linkFinal = `${window.location.origin}/checkin.html?id=${encodeURIComponent(localizadorUnico)}`;
+      document.getElementById('enlace-url').innerText = linkFinal;
+      document.getElementById('resultado-box').style.display = 'block';
+    } catch (error) {
+      alert(error.message);
+    }
+  }
+
+  function copiarAlPortapapeles() {
+    const url = document.getElementById('enlace-url').innerText;
+    if (!url) {
+      alert('No hay enlace para copiar. Genera primero el enlace.');
+      return;
+    }
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url)
+        .then(() => alert('¡Enlace multireserva copiado al portapapeles!'))
+        .catch(() => fallbackCopyText(url));
+      return;
+    }
+
+    fallbackCopyText(url);
+  }
+
+  function fallbackCopyText(text) {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.left = '-9999px';
+    textarea.style.top = '0';
+    document.body.appendChild(textarea);
+    textarea.focus();
+    textarea.select();
+
+    try {
+      const successful = document.execCommand('copy');
+      if (successful) {
+        alert('¡Enlace multireserva copiado al portapapeles!');
+      } else {
+        alert('No se pudo copiar automáticamente. Selecciona el enlace manualmente.');
+      }
+    } catch (err) {
+      alert('No se pudo copiar automáticamente. Selecciona el enlace manualmente.');
+    }
+
+    document.body.removeChild(textarea);
+  }
+</script>
+
+</body>
+</html>

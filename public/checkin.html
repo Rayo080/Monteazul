@@ -1,0 +1,495 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Monteazul - Registro de Huéspedes</title>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: #f4f7f6; margin: 0; padding: 15px; color: #333; }
+    .card { max-width: 520px; background: white; padding: 28px; border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); margin: 24px auto; }
+    h3 { margin-top: 0; color: #2c3e50; }
+    .bienvenida { background: #ebf5fb; border-left: 4px solid #3498db; padding: 18px; border-radius: 8px; margin-bottom: 22px; text-align: center; }
+    .bienvenida p { margin: 6px 0; }
+    .form-group { margin-bottom: 18px; }
+    label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 14px; }
+    button { width: 100%; padding: 13px; background: #3498db; color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: 700; cursor: pointer; transition: background 0.2s, opacity 0.2s; }
+    button:hover:not(:disabled) { background: #2f80c0; }
+    button:disabled { background: #c9d3db; color: #7f8c8d; cursor: not-allowed; opacity: 0.9; }
+    .canvas-firma { border: 2px dashed #95a5a6; border-radius: 12px; background: #fafafa; cursor: crosshair; touch-action: none; width: 100%; }
+    .btn-clear { background: #e74c3c; padding: 8px 14px; font-size: 12px; width: auto; margin-top: 10px; float: right; }
+    .btn-clear:hover { background: #c0392b; }
+    .escanner-container { background: #fdfefe; padding: 22px; border-radius: 14px; border: 2px dashed #3498db; text-align: center; margin-bottom: 26px; box-shadow: inset 0 2px 8px rgba(52,152,219,0.08); }
+    .escanner-label { color: #2c3e50; font-size: 17px; font-weight: 700; margin-bottom: 8px; display: block; }
+    .escanner-subtxt { font-size: 13px; color: #6c7a89; margin: 0 0 16px 0; line-height: 1.5; }
+    .btn-escanner { background: #2c3e50; padding: 11px 22px; font-size: 15px; width: auto; }
+    .btn-escanner:hover { background: #1a252f; }
+    .advertencia-critica { background: #fdf2f2; border: 2px solid #e74c3c; color: #b71c1c; padding: 16px; border-radius: 12px; margin-bottom: 24px; text-align: left; font-size: 14px; line-height: 1.6; display: none; }
+    .advertencia-critica strong { color: #c0392b; }
+    #txt-foto-status { font-size: 14px; margin-top: 14px; font-weight: 700; padding: 12px; border-radius: 10px; display: none; }
+    .status-analizando { color: #e67e22; background: #fef5e7; border: 1px solid #fad7a0; }
+    .status-success { color: #27ae60; background: #e8f8f5; border: 1px solid #a3e4d7; }
+  </style>
+</head>
+<body>
+
+<div id="pantalla-carga" class="card" style="text-align: center;">
+  <h3>Buscando tu reserva...</h3>
+  <p>Por favor, espera un momento.</p>
+</div>
+
+<div id="pantalla-error" class="card" style="text-align: center; display: none; border-top: 4px solid #e74c3c;">
+  <h3 style="color: #e74c3c;">Reserva no encontrada</h3>
+  <p>El enlace no es válido o ya ha caducado. Por favor, contacta con Monteazul.</p>
+</div>
+
+<div id="pantalla-checkin" class="card" style="display: none;">
+  <div class="bienvenida">
+    <p style="margin: 0;">👋 Hola <strong id="saludo-nombre">...</strong>,</p>
+    <p style="margin: 6px 0 0 0; font-size: 14px; color: #555;">Validando acceso para la <strong>Habitación <span id="saludo-hab">...</span></strong>.</p>
+    <p style="margin: 6px 0 0 0; font-size: 13px; color: #6c7a89;">Invitados confirmados: <strong id="saludo-huespedes">...</strong></p>
+    <p id="info-progreso" style="margin: 10px 0 0 0; font-size: 14px; color: #2980b9; font-weight: 700;">Huésped 1 de 1</p>
+  </div>
+
+  <div id="zona-huespedes">
+    <details style="background:#f6fbff;border:1px solid #d6eaf8;padding:14px;border-radius:10px;margin-bottom:18px;">
+      <summary style="font-weight:700; cursor:pointer;">¿Qué documentos son válidos y cuáles no?</summary>
+      <div style="margin-top:10px; font-size:14px; color:#333; line-height:1.5;">
+        <p><strong>Válidos:</strong></p>
+        <ul>
+          <li>DNI / NIF / NIE / TIE — foto de la <strong>cara frontal</strong> con número y letra claramente legibles.</li>
+          <li>Pasaportes (frontal con MRZ o número de pasaporte legible).</li>
+          <li>Documentos nacionales de identidad de la Unión Europea — frontal.</li>
+        </ul>
+        <p><strong>No válidos (no aceptados):</strong></p>
+        <ul>
+          <li>Abonos y tarjetas de transporte (metro/bus/EMT, etc.).</li>
+          <li>Carnés de conducir (por riesgo de falsificación y formato no compatible).</li>
+          <li>Tarjetas de gimnasio, universitarias, carnets comerciales o tarjetas de descuento.</li>
+          <li>Fotos de cuadernos, documentos recortados o impresiones no oficiales.</li>
+        </ul>
+        <p><strong>Consejos rápidos:</strong> usa la cámara del móvil, buena luz sin reflejos, enfoca la cara frontal del documento y evita recortes o ediciones. Si el documento no es válido, se te solicitará otra foto.</p>
+      </div>
+    </details>
+    <div id="alerta-fraude" class="advertencia-critica">
+      <strong>⚠️ ¡ATENCIÓN! VERIFICACIÓN FALLIDA DEL DOCUMENTO.</strong><br>
+      La foto debe ser la <strong>CARA DELANTERA</strong> de un DNI o pasaporte válido. Si no cumple, no se dará acceso. Usa cámara y no galería.
+    </div>
+
+    <div class="form-group escanner-container">
+      <label class="escanner-label">📷 Foto Obligatoria del Documento</label>
+      <p class="escanner-subtxt">Pulsa el botón, activa la cámara del móvil y enfoca la cara delantera del documento. El proceso bloquea el avance si el documento no es válido.</p>
+      <div id="contenedor-vista-previa" style="display: none; margin-bottom: 16px; text-align: center;">
+        <img id="img-vista-previa" src="" alt="Vista previa protegida" style="max-width: 100%; max-height: 140px; border-radius: 10px; border: 2px solid #ddd; box-shadow: 0 2px 6px rgba(0,0,0,0.12);">
+        <p style="font-size: 11px; color: #27ae60; margin-top: 6px; font-weight: 700;">🔒 Vista previa legal protegida</p>
+      </div>
+      <input type="file" id="input-camara" accept="image/*" capture="environment" style="display: none;" onchange="validarYProcesarFoto(this)">
+      <button type="button" class="btn-escanner" id="btn-disparador-camara" onclick="document.getElementById('input-camara').click()">📸 Abrir Cámara</button>
+      <p id="txt-foto-status"></p>
+    </div>
+
+    <div class="form-group" style="overflow: hidden;">
+      <label>Firma Digital Obligatoria</label>
+      <canvas id="canvas-firma" class="canvas-firma" width="430" height="150"></canvas>
+      <button type="button" class="btn-clear" id="btn-borrar-firma">Borrar Firma</button>
+    </div>
+
+    <button id="btn-siguiente" onclick="procesarCheckin()" disabled>Finalizar Check-in (Solo con DNI válido)</button>
+    <p style="font-size: 11px; color: #7f8c8d; text-align: center; margin-top: 10px;">* El botón se activa solo cuando la foto del documento es válida.</p>
+  </div>
+</div>
+
+<div id="pantalla-exito" class="card" style="text-align: center; display: none; border-top: 4px solid #27ae60;">
+  <h3 style="color: #27ae60;">¡Check-in Completado! 🎉</h3>
+  <p>La documentación fue validada. El acceso se ha registrado correctamente.</p>
+</div>
+
+<canvas id="canvas-procesador" style="display: none;"></canvas>
+
+<script>
+  const SUPABASE_URL = "https://hhapopvdhddkpwpdubqi.supabase.co";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhoYXBvcHZkaGRka3B3cGR1YnFpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjczODUzOTEsImV4cCI6MjA4Mjk2MTM5MX0.bD-V_ywVOlWpw8jr5jeny52bBq36fBRA9gsvGdHv1qI";
+
+  const urlParams = new URLSearchParams(window.location.search);
+  const reservaId = urlParams.get('id');
+
+  let datosReserva = null;
+  let fotoActualBase64 = null;
+  let canvas, ctx, dibujando = false;
+  let huespedActualIndice = 1;
+  let huespedesRegistrados = [];
+
+  window.addEventListener('DOMContentLoaded', async () => {
+    if (!reservaId) {
+      mostrarPantalla('pantalla-error');
+      return;
+    }
+    inicializarFirma();
+    await cargarReserva();
+  });
+
+  async function cargarReserva() {
+    try {
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/enlaces_checkin?localizador=eq.${encodeURIComponent(reservaId)}&estado=eq.pendiente`, {
+        method: 'GET',
+        headers: {
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+        }
+      });
+      const filas = await response.json();
+      if (!filas || filas.length === 0) {
+        mostrarPantalla('pantalla-error');
+        return;
+      }
+      datosReserva = filas[0];
+      datosReserva.numero_huespedes = Number(datosReserva.numero_huespedes) || 1;
+      document.getElementById('saludo-nombre').innerText = datosReserva.nombre_titular || 'Huésped';
+      document.getElementById('saludo-hab').innerText = (datosReserva.habitacion_tipo || 'habitación').toString().toUpperCase();
+      document.getElementById('saludo-huespedes').innerText = datosReserva.numero_huespedes;
+      actualizarProgreso();
+      mostrarPantalla('pantalla-checkin');
+    } catch (error) {
+      console.error(error);
+      mostrarPantalla('pantalla-error');
+    }
+  }
+
+  async function validarYProcesarFoto(input) {
+    if (!input.files || !input.files[0]) return;
+
+    const statusTxt = document.getElementById('txt-foto-status');
+    const alertaFraude = document.getElementById('alerta-fraude');
+    const vistaPreviaContenedor = document.getElementById('contenedor-vista-previa');
+    const btnSiguiente = document.getElementById('btn-siguiente');
+    const btnDisparador = document.getElementById('btn-disparador-camara');
+
+    alertaFraude.style.display = 'none';
+    statusTxt.style.display = 'block';
+    statusTxt.className = 'status-analizando';
+    statusTxt.innerText = '🤖 Analizando validez del documento oficial...';
+
+    btnSiguiente.disabled = true;
+    btnDisparador.innerText = '🔄 Verificando...';
+
+    const archivoOriginal = input.files[0];
+    if (!archivoOriginal.type.startsWith('image/')) {
+      return procesarErrorDeFoto('El archivo seleccionado no es una imagen válida.');
+    }
+
+    try {
+      const ret = await Tesseract.recognize(archivoOriginal, 'spa+eng');
+      const textoDetectado = ret.data.text.toUpperCase();
+      console.log('Texto extraído para análisis internacional:', textoDetectado);
+
+      // --- LISTA NEGRA (bloqueos explícitos para abonos, carnés y tarjetas no gubernamentales)
+      const listaNegra = [
+        'TRANSPORTE','CONSORCIO','ABONO','METRO','BUS','EMT','VALIDO HASTA','TITULO','VIAJE',
+        'DEPORTIVO','ESTUDIANTE','UNIVERSITY','COLEGIO','GIMNASIO',
+        'CONDUCIR','PERMISO DE CONDUCCION','DRIVING LICENCE','CONDUCCIÓN','LICENCIA','DRIVING'
+      ];
+      const esFraudeDetectado = listaNegra.some(pal => textoDetectado.includes(pal));
+      if (esFraudeDetectado) {
+        console.warn('⚠️ Documento en lista negra detectado, bloqueo.');
+        throw new Error('documento_prohibido');
+      }
+
+      const esDNIoNIE = /\b\d{8}[A-Z]\b/.test(textoDetectado) || /\b[XYZ]\d{7}[A-Z]\b/.test(textoDetectado);
+      const tieneBandaMRZ = /<<[A-Z0-9<]{8,}/.test(textoDetectado) || textoDetectado.includes('<<');
+      const esPasaporteEstructura = /\b[A-Z]{1,3}\d{6,9}\b/.test(textoDetectado);
+
+      const diccionarioOficial = [
+        'ESP','DOCUMENTO','NACIONAL','IDENTI','MINISTERIO','RESIDENCIA','EXTRANJERO',
+        'PASAPORTE','PASSPORT','PASSEPORT','REPUBLI','KINGDOM','UNITED',
+        'CARTE','REPUBLIQUE','FRANCAISE','PERSONALAUSWEIS','BUNDESREPUBLIK','DEUTSCHLAND',
+        'CARTA',"D'IDENTITA",'ITALIANA','REPUBLICA','PORTUGUESA','ID','CARD'
+      ];
+      const coincidenciasOficiales = diccionarioOficial.filter(pal => textoDetectado.includes(pal)).length;
+
+      console.log('¿Estructura DNI/NIE?:', esDNIoNIE);
+      console.log('¿Tiene código MRZ?:', tieneBandaMRZ);
+      console.log('¿Estructura Pasaporte?:', esPasaporteEstructura);
+      console.log('Coincidencias de palabras oficiales:', coincidenciasOficiales);
+
+      if (!(esDNIoNIE || tieneBandaMRZ || esPasaporteEstructura || coincidenciasOficiales >= 2)) {
+        throw new Error('documento_no_admitido');
+      }
+
+      const img = new Image();
+      img.src = URL.createObjectURL(archivoOriginal);
+      img.onload = function() {
+        const procCanvas = document.getElementById('canvas-procesador');
+        const pCtx = procCanvas.getContext('2d');
+        procCanvas.width = 800;
+        procCanvas.height = (img.height / img.width) * 800;
+        pCtx.drawImage(img, 0, 0, procCanvas.width, procCanvas.height);
+
+        const imgData = pCtx.getImageData(0, 0, procCanvas.width, procCanvas.height);
+        const data = imgData.data;
+        for (let i = 0; i < data.length; i += 4) {
+          const gris = data[i] * 0.3 + data[i + 1] * 0.59 + data[i + 2] * 0.11;
+          data[i] = gris;
+          data[i + 1] = gris;
+          data[i + 2] = gris;
+        }
+        pCtx.putImageData(imgData, 0, 0);
+
+        pCtx.font = 'bold 34px Arial';
+        pCtx.fillStyle = 'rgba(255, 255, 255, 0.45)';
+        pCtx.textAlign = 'center';
+        pCtx.save();
+        pCtx.translate(procCanvas.width / 2, procCanvas.height / 2);
+        pCtx.rotate(-Math.PI / 6);
+        pCtx.fillText('SOLO PARA USO REGISTRO POLICIAL', 0, -20);
+        pCtx.fillText('MONTEAZUL ALOJAMIENTOS', 0, 20);
+        pCtx.restore();
+
+        fotoActualBase64 = procCanvas.toDataURL('image/jpeg', 0.75);
+        document.getElementById('img-vista-previa').src = fotoActualBase64;
+        vistaPreviaContenedor.style.display = 'block';
+
+        statusTxt.className = 'status-success';
+        statusTxt.innerText = '✅ Documento oficial verificado y vinculado.';
+        btnDisparador.innerText = '📸 Cambiar Foto';
+        btnSiguiente.disabled = false;
+      };
+
+      img.onerror = function() {
+        procesarErrorDeFoto('No se pudo procesar la imagen. Intenta con la cámara nuevamente.');
+      };
+
+    } catch (error) {
+      console.error(error);
+      fotoActualBase64 = null;
+      input.value = '';
+      vistaPreviaContenedor.style.display = 'none';
+      statusTxt.style.display = 'none';
+      alertaFraude.style.display = 'block';
+      btnDisparador.innerText = '📸 REINTENTAR FOTO (DOCUMENTO OFICIAL)';
+      btnSiguiente.disabled = true;
+    }
+
+    function procesarErrorDeFoto(mensaje) {
+      console.warn(mensaje);
+      fotoActualBase64 = null;
+      input.value = '';
+      vistaPreviaContenedor.style.display = 'none';
+      statusTxt.style.display = 'none';
+      alertaFraude.style.display = 'block';
+      btnDisparador.innerText = '📸 REINTENTAR FOTO (DOCUMENTO OFICIAL)';
+      btnSiguiente.disabled = true;
+    }
+  }
+
+  function procesarCheckin() {
+    if (!fotoActualBase64) {
+      alert('La verificación del DNI es obligatoria antes de continuar.');
+      return;
+    }
+    if (!firmaEsValida()) {
+      alert('Por favor, firma en el cuadro antes de continuar.');
+      return;
+    }
+
+    huespedesRegistrados.push({
+      firma: canvas.toDataURL('image/png'),
+      fotoDni: fotoActualBase64,
+      indice: huespedActualIndice
+    });
+
+    const total = Number(datosReserva.numero_huespedes) || 1;
+    if (huespedActualIndice < total) {
+      huespedActualIndice += 1;
+      reiniciarPasoHuesped();
+    } else {
+      enviarCheckinFinal();
+    }
+  }
+
+  function actualizarProgreso() {
+    const total = Number(datosReserva.numero_huespedes) || 1;
+    document.getElementById('info-progreso').innerText = `Huésped ${huespedActualIndice} de ${total}`;
+    const btnSiguiente = document.getElementById('btn-siguiente');
+    btnSiguiente.innerText = huespedActualIndice < total ? 'Siguiente Huésped ➡️' : 'Finalizar Check-in';
+  }
+
+  function reiniciarPasoHuesped() {
+    fotoActualBase64 = null;
+    document.getElementById('input-camara').value = '';
+    document.getElementById('contenedor-vista-previa').style.display = 'none';
+    document.getElementById('txt-foto-status').style.display = 'none';
+    document.getElementById('alerta-fraude').style.display = 'none';
+    document.getElementById('btn-disparador-camara').innerText = '📸 Abrir Cámara';
+    document.getElementById('btn-siguiente').disabled = true;
+    limpiarFirma();
+    actualizarProgreso();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function firmaEsValida() {
+    const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+    for (let i = 0; i < data.length; i += 4) {
+      if (data[i + 3] !== 0) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  function base64ToBlob(base64, mime) {
+    const byteChars = atob(base64.split(',')[1]);
+    const byteNumbers = new Array(byteChars.length);
+    for (let i = 0; i < byteChars.length; i++) {
+      byteNumbers[i] = byteChars.charCodeAt(i);
+    }
+    const byteArray = new Uint8Array(byteNumbers);
+    return new Blob([byteArray], { type: mime });
+  }
+
+  async function enviarCheckinFinal() {
+    const btnSiguiente = document.getElementById('btn-siguiente');
+    btnSiguiente.disabled = true;
+    btnSiguiente.innerText = 'Guardando credenciales...';
+
+    try {
+      const filasParaInsertar = [];
+      for (const huesped of huespedesRegistrados) {
+        const nombreArchivo = `${datosReserva.localizador || 'checkin'}-${huesped.indice}-${Date.now()}.jpg`;
+        const blobFoto = base64ToBlob(huesped.fotoDni, 'image/jpeg');
+
+        const subirFotoReq = await fetch(`${SUPABASE_URL}/storage/v1/object/dni-fotos/${encodeURIComponent(nombreArchivo)}`, {
+          method: 'POST',
+          headers: {
+            'apikey': SUPABASE_ANON_KEY,
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+            'Content-Type': 'image/jpeg'
+          },
+          body: blobFoto
+        });
+        if (!subirFotoReq.ok) {
+          throw new Error(`Error al subir el documento del huésped ${huesped.indice}.`);
+        }
+
+        const urlPublicaFoto = `${SUPABASE_URL}/storage/v1/object/public/dni-fotos/${encodeURIComponent(nombreArchivo)}`;
+        filasParaInsertar.push({
+          enlace_id: datosReserva.id,
+          localizador: datosReserva.localizador,
+          nombre_completo: `${datosReserva.nombre_titular || 'Huésped'} - Huésped ${huesped.indice}`,
+          documento_identidad: 'VERIFICADO_VIA_FOTO',
+          firma_digital: huesped.firma,
+          foto_documento_url: urlPublicaFoto
+        });
+      }
+
+        const responseGuardar = await fetch(`${SUPABASE_URL}/rest/v1/partes_huespedes`, {
+        method: 'POST',
+        headers: {
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify(filasParaInsertar)
+      });
+      if (responseGuardar.status < 200 || responseGuardar.status >= 300) {
+        throw new Error('Error al registrar la verificación en la base de datos.');
+      }
+
+      const actualizaReserva = await fetch(`${SUPABASE_URL}/rest/v1/enlaces_checkin?localizador=eq.${encodeURIComponent(reservaId.trim())}`, {
+        method: 'PATCH',
+        headers: {
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify({ estado: 'completado' })
+      });
+      if (actualizaReserva.status < 200 || actualizaReserva.status >= 300) {
+        throw new Error('Error al actualizar el estado de la reserva.');
+      }
+
+      mostrarPantalla('pantalla-exito');
+    } catch (error) {
+      console.error(error);
+      alert('Hubo un problema al finalizar el check-in: ' + (error.message || 'error inesperado'));
+      btnSiguiente.disabled = false;
+      btnSiguiente.innerText = 'Finalizar Check-in (Solo con DNI válido)';
+    }
+  }
+
+  function mostrarPantalla(id) {
+    document.getElementById('pantalla-carga').style.display = 'none';
+    document.getElementById('pantalla-checkin').style.display = 'none';
+    document.getElementById('pantalla-error').style.display = 'none';
+    document.getElementById('pantalla-exito').style.display = 'none';
+    document.getElementById(id).style.display = 'block';
+  }
+
+  function inicializarFirma() {
+    canvas = document.getElementById('canvas-firma');
+    if (!canvas) return;
+    ctx = canvas.getContext('2d');
+    ctx.strokeStyle = '#2c3e50';
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    function obtenerCoordenadas(e) {
+      const rect = canvas.getBoundingClientRect();
+      const escalaX = canvas.width / rect.width;
+      const escalaY = canvas.height / rect.height;
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      return { x: (clientX - rect.left) * escalaX, y: (clientY - rect.top) * escalaY };
+    }
+
+    canvas.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      dibujando = true;
+      const pos = obtenerCoordenadas(e);
+      ctx.beginPath();
+      ctx.moveTo(pos.x, pos.y);
+    });
+    canvas.addEventListener('mousemove', (e) => {
+      if (!dibujando) return;
+      e.preventDefault();
+      const pos = obtenerCoordenadas(e);
+      ctx.lineTo(pos.x, pos.y);
+      ctx.stroke();
+    });
+    canvas.addEventListener('mouseup', () => { dibujando = false; });
+    canvas.addEventListener('mouseleave', () => { dibujando = false; });
+
+    canvas.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      dibujando = true;
+      const pos = obtenerCoordenadas(e);
+      ctx.beginPath();
+      ctx.moveTo(pos.x, pos.y);
+    }, { passive: false });
+    canvas.addEventListener('touchmove', (e) => {
+      if (!dibujando) return;
+      e.preventDefault();
+      const pos = obtenerCoordenadas(e);
+      ctx.lineTo(pos.x, pos.y);
+      ctx.stroke();
+    }, { passive: false });
+    canvas.addEventListener('touchend', () => { dibujando = false; });
+
+    document.getElementById('btn-borrar-firma').addEventListener('click', (e) => {
+      e.preventDefault();
+      limpiarFirma();
+    });
+  }
+
+  function limpiarFirma() {
+    if (ctx && canvas) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+  }
+</script>
+
+</body>
+</html>
