@@ -93,9 +93,12 @@
   </div>
 
   <!-- CREDENCIALES DE SUPABASE -->
-  <script>
-    const SUPABASE_URL = "https://hhapopvdhddkpwpdubqi.supabase.co"; 
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhoYXBvcHZkaGRra3B3cGR1YnFpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjczODUzOTEsImV4cCI6MjA4Mjk2MTM5MX0.bD-V_ywVOlWpw8jr5jeny52bBq36fBRA9gsvGdHv1qI";
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/module/supabase.js';
+
+    const SUPABASE_URL = 'https://hhapopvdhddkpwpdubqi.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhoYXBvcHZkaGRka3B3cGR1ZnFpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjczODUzOTEsImV4cCI6MjA4Mjk2MTM5MX0.bD-V_ywVOlWpw8jr5jeny52bBq36fBRA9gsvGdHv1qI';
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     window.addEventListener('DOMContentLoaded', () => {
       if (localStorage.getItem('monteazul_logged') === 'true' || sessionStorage.getItem('monteazul_logged') === 'true') {
@@ -109,25 +112,28 @@
       const recordar = document.getElementById('remember').checked;
 
       try {
-        const response = await fetch(`${SUPABASE_URL}/rest/v1/administradores?usuario=eq.${encodeURIComponent(user)}&password=eq.${encodeURIComponent(pass)}`, {
-          method: 'GET',
-          headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
-        });
+        const { data, error } = await supabase
+          .from('administradores')
+          .select('*')
+          .eq('usuario', user)
+          .eq('password', pass)
+          .single();
 
-        const datos = await response.json();
-        console.log('Response status:', response.status, 'Data:', datos);
-        
-        if (datos.length > 0) {
-          if (recordar) {
-            localStorage.setItem('monteazul_logged', 'true');
-          } else {
-            sessionStorage.setItem('monteazul_logged', 'true');
-          }
-          mostrarMenuPrincipal();
-        } else {
+        console.log('Supabase login response', { data, error });
+
+        if (error || !data) {
           alert("⚠️ Usuario o contraseña incorrectos.\n\nSi el problema persiste, contacta al administrador.");
-          console.warn('Login falló: no se encontraron registros para el usuario', user);
+          console.warn('Login falló: no se encontraron registros para el usuario', user, error);
+          return;
         }
+
+        if (recordar) {
+          localStorage.setItem('monteazul_logged', 'true');
+        } else {
+          sessionStorage.setItem('monteazul_logged', 'true');
+        }
+
+        mostrarMenuPrincipal();
       } catch (error) {
         console.error('Error de login:', error);
         alert("❌ Error de conexión con el servidor.\n\nDetalles: " + error.message);
@@ -151,28 +157,28 @@
     async function registrarNuevoAdmin() {
       const newUser = document.getElementById('new-user').value.trim();
       const newPass = document.getElementById('new-pass').value;
-      if(!newUser || !newPass) { alert("Completa todos los campos"); return; }
+      if (!newUser || !newPass) {
+        alert("Completa todos los campos");
+        return;
+      }
 
       try {
-        const response = await fetch(`${SUPABASE_URL}/rest/v1/administradores`, {
-          method: 'POST',
-          headers: {
-            'apikey': SUPABASE_ANON_KEY,
-            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ usuario: newUser, password: newPass })
-        });
+        const { error } = await supabase
+          .from('administradores')
+          .insert({ usuario: newUser, password: newPass });
 
-        if(response.ok) {
-          alert("🎉 ¡Nuevo administrador creado con éxito!");
-          document.getElementById('new-user').value = "";
-          document.getElementById('new-pass').value = "";
-          cerrarModalNuevoAdmin();
-        } else {
+        if (error) {
           alert("El usuario ya existe o no se pudo guardar.");
+          console.error('Error creando admin:', error);
+          return;
         }
+
+        alert("🎉 ¡Nuevo administrador creado con éxito!");
+        document.getElementById('new-user').value = "";
+        document.getElementById('new-pass').value = "";
+        cerrarModalNuevoAdmin();
       } catch (error) {
+        console.error('Error al guardar administrador:', error);
         alert("Error al guardar en el servidor.");
       }
     }
