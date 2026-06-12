@@ -1,5 +1,9 @@
 {
   "rewrites": [
+    { "source": "/admin.html", "destination": "/public/admin.html" },
+    { "source": "/admin-checkin.html", "destination": "/public/admin-checkin.html" },
+    { "source": "/admin-credenciales.html", "destination": "/public/admin-credenciales.html" },
+    { "source": "/checkin.html", "destination": "/public/checkin.html" },
     { "source": "/(.*)", "destination": "/" }
   ]
 }

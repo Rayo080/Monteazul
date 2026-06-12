@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Panel de Control - Monteazul</title>
+  <style>
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f4f8; margin: 0; padding: 0; display: flex; align-items: center; justify-content: center; min-height: 100vh; color: #333; }
+    .card { background: white; padding: 30px; border-radius: 14px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); width: 100%; max-width: 720px; box-sizing: border-box; text-align: center; }
+    h2 { margin-top: 0; color: #2c3e50; margin-bottom: 18px; }
+    .form-group { margin-bottom: 12px; text-align: left; }
+    label { display: block; margin-bottom: 6px; font-weight: 600; color: #4a5568; font-size: 14px; }
+    input[type="text"], input[type="password"] { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; font-size: 15px; }
+    .remember-me { display: flex; align-items: center; gap: 8px; margin: 12px 0; font-size: 14px; color: #64748b; cursor: pointer; }
+    .btn-submit { background: #3498db; color: white; border: none; padding: 12px; width: 100%; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: background 0.2s; }
+    .btn-submit:hover { background: #2980b9; }
+    .menu-panel { display: none; width: 100%; max-width: 900px; background: white; padding: 28px; border-radius: 16px; box-shadow: 0 6px 25px rgba(0,0,0,0.06); box-sizing: border-box; }
+    .grid-menu { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 18px; }
+    @media(max-width: 700px) { .grid-menu { grid-template-columns: 1fr; } }
+    .menu-option { background: #f8fafc; border: 2px solid #e2e8f0; padding: 18px 12px; border-radius: 12px; text-decoration: none; color: #2c3e50; font-weight: bold; font-size: 16px; transition: all 0.2s; display: flex; flex-direction: column; align-items: center; gap: 8px; cursor: pointer; }
+    .menu-option:hover { background: #e1f5fe; border-color: #3498db; transform: translateY(-3px); }
+    .menu-option span { font-size: 28px; }
+    .menu-option small { font-weight: normal; color: #64748b; font-size: 12px; text-align: center; }
+    .logout-btn { background: #e74c3c; color: white; border: none; padding: 8px 15px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 13px; margin-top: 18px; }
+    /* Modal */
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); align-items: center; justify-content: center; }
+    .modal-content { background: white; padding: 18px; border-radius: 12px; width: 90%; max-width: 420px; text-align: left; }
+  </style>
+</head>
+<body>
+  <div class="card" id="login-box">
+    <h2>🔐 Acceso Administrativo</h2>
+    <div class="form-group">
+      <label for="user">Usuario</label>
+      <input id="user" type="text" autocomplete="username" />
+    </div>
+    <div class="form-group">
+      <label for="pass">Contraseña</label>
+      <input id="pass" type="password" autocomplete="current-password" />
+    </div>
+    <label class="remember-me"><input id="remember" type="checkbox" /> Recordar mi dispositivo</label>
+    <button class="btn-submit" onclick="procesarLogin()">Entrar al Panel</button>
+  </div>
+
+  <div class="menu-panel" id="menu-box">
+    <h2>👋 ¡Hola de nuevo!</h2>
+    <p>¿Qué gestión deseas realizar hoy en Monteazul?</p>
+    <div class="grid-menu">
+      <div class="menu-option" onclick="location.href='admin-checkin.html'">
+        <span>🔗</span>
+        <div>Creador de Enlaces</div>
+        <small>Generar enlaces de check-in únicos y múltiples</small>
+      </div>
+
+      <div class="menu-option" onclick="location.href='admin-credenciales.html'">
+        <span>🪪</span>
+        <div>Registro de Huéspedes</div>
+        <small>Ver credenciales, firmas y documentos oficiales</small>
+      </div>
+
+      <div class="menu-option" onclick="location.href='/admin-disponibilidad'">
+        <span>📊</span>
+        <div>Disponibilidad y Precios</div>
+        <small>Modificar tarifas, stock y control de habitaciones</small>
+      </div>
+
+      <div class="menu-option" onclick="abrirModalNuevoAdmin()">
+        <span>👤</span>
+        <div>Añadir Administrador</div>
+        <small>Crear nuevas cuentas de acceso para el personal</small>
+      </div>
+    </div>
+
+    <button class="logout-btn" onclick="cerrarSesion()">🔒 Cerrar Sesión</button>
+  </div>
+
+  <div class="modal" id="admin-modal">
+    <div class="modal-content">
+      <h3>👤 Crear Nuevo Administrador</h3>
+      <div class="form-group">
+        <label for="new-user">Nuevo Usuario</label>
+        <input id="new-user" type="text" />
+      </div>
+      <div class="form-group">
+        <label for="new-pass">Contraseña de Acceso</label>
+        <input id="new-pass" type="password" />
+      </div>
+      <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:12px;">
+        <button onclick="registrarNuevoAdmin()" class="btn-submit">Guardar Cuenta</button>
+        <button onclick="cerrarModalNuevoAdmin()" style="background:#cbd5e1;border:none;padding:10px 14px;border-radius:8px;">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CREDENCIALES DE SUPABASE -->
+  <script>
+    const SUPABASE_URL = "https://hhapopvdhddkpwpdubqi.supabase.co"; 
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhoYXBvcHZkaGRra3B3cGR1YnFpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjczODUzOTEsImV4cCI6MjA4Mjk2MTM5MX0.bD-V_ywVOlWpw8jr5jeny52bBq36fBRA9gsvGdHv1qI";
+
+    window.addEventListener('DOMContentLoaded', () => {
+      if (localStorage.getItem('monteazul_logged') === 'true' || sessionStorage.getItem('monteazul_logged') === 'true') {
+        mostrarMenuPrincipal();
+      }
+    });
+
+    async function procesarLogin() {
+      const user = document.getElementById('user').value.trim();
+      const pass = document.getElementById('pass').value;
+      const recordar = document.getElementById('remember').checked;
+
+      try {
+        const response = await fetch(`${SUPABASE_URL}/rest/v1/administradores?usuario=eq.${encodeURIComponent(user)}&password=eq.${encodeURIComponent(pass)}`, {
+          method: 'GET',
+          headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
+        });
+
+        const datos = await response.json();
+        if (datos.length > 0) {
+          if (recordar) {
+            localStorage.setItem('monteazul_logged', 'true');
+          } else {
+            sessionStorage.setItem('monteazul_logged', 'true');
+          }
+          mostrarMenuPrincipal();
+        } else {
+          alert("⚠️ Usuario o contraseña incorrectos.");
+        }
+      } catch (error) {
+        alert("Error de conexión con el servidor.");
+      }
+    }
+
+    function mostrarMenuPrincipal() {
+      document.getElementById('login-box').style.display = 'none';
+      document.getElementById('menu-box').style.display = 'block';
+    }
+
+    function cerrarSesion() {
+      localStorage.removeItem('monteazul_logged');
+      sessionStorage.removeItem('monteazul_logged');
+      window.location.reload();
+    }
+
+    function abrirModalNuevoAdmin() { document.getElementById('admin-modal').style.display = 'flex'; }
+    function cerrarModalNuevoAdmin() { document.getElementById('admin-modal').style.display = 'none'; }
+
+    async function registrarNuevoAdmin() {
+      const newUser = document.getElementById('new-user').value.trim();
+      const newPass = document.getElementById('new-pass').value;
+      if(!newUser || !newPass) { alert("Completa todos los campos"); return; }
+
+      try {
+        const response = await fetch(`${SUPABASE_URL}/rest/v1/administradores`, {
+          method: 'POST',
+          headers: {
+            'apikey': SUPABASE_ANON_KEY,
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ usuario: newUser, password: newPass })
+        });
+
+        if(response.ok) {
+          alert("🎉 ¡Nuevo administrador creado con éxito!");
+          document.getElementById('new-user').value = "";
+          document.getElementById('new-pass').value = "";
+          cerrarModalNuevoAdmin();
+        } else {
+          alert("El usuario ya existe o no se pudo guardar.");
+        }
+      } catch (error) {
+        alert("Error al guardar en el servidor.");
+      }
+    }
+  </script>
+</body>
+</html>
