@@ -93,12 +93,9 @@
   </div>
 
   <!-- CREDENCIALES DE SUPABASE -->
-  <script type="module">
-    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/module/supabase.js';
-
-    const SUPABASE_URL = 'https://hhapopvdhddkpwpdubqi.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhoYXBvcHZkaGRka3B3cGR1YnFpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjczODUzOTEsImV4cCI6MjA4Mjk2MTM5MX0.bD-V_ywVOlWpw8jr5jeny52bBq36fBRA9gsvGdHv1qI';
-    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  <script>
+    const SUPABASE_URL = "https://hhapopvdhddkpwpdubqi.supabase.co";
+    const SUPABASE_ANON_KEY = "sb_publishable_FvSC-I_XrGetjQ1XvAIUYg_T00VRXBj";
 
     window.addEventListener('DOMContentLoaded', () => {
       if (localStorage.getItem('monteazul_logged') === 'true' || sessionStorage.getItem('monteazul_logged') === 'true') {
@@ -107,36 +104,63 @@
     });
 
     async function procesarLogin() {
-      const user = document.getElementById('user').value.trim();
-      const pass = document.getElementById('pass').value;
-      const recordar = document.getElementById('remember').checked;
+      console.log('Iniciando proceso de login...');
+      const userField = document.getElementById('user');
+      const passField = document.getElementById('pass');
+      const rememberField = document.getElementById('remember');
+
+      if (!userField || !passField) {
+        alert('Error interno: No se encuentran los campos del formulario.');
+        return;
+      }
+
+      const user = userField.value.trim();
+      const pass = passField.value;
+      const recordar = rememberField ? rememberField.checked : false;
+
+      if (!user || !pass) {
+        alert('Por favor, rellena todos los campos.');
+        return;
+      }
+
+      const urlEndpoint = `${SUPABASE_URL}/rest/v1/administradores?usuario=eq.${encodeURIComponent(user)}&password=eq.${encodeURIComponent(pass)}`;
+      console.log('URL de login:', urlEndpoint);
 
       try {
-        const { data, error } = await supabase
-          .from('administradores')
-          .select('*')
-          .eq('usuario', user)
-          .eq('password', pass)
-          .single();
+        const response = await fetch(urlEndpoint, {
+          method: 'GET',
+          headers: {
+            'apikey': SUPABASE_ANON_KEY,
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+            'Content-Type': 'application/json'
+          }
+        });
 
-        console.log('Supabase login response', { data, error });
+        console.log('Status del servidor:', response.status);
 
-        if (error || !data) {
-          alert("⚠️ Usuario o contraseña incorrectos.\n\nSi el problema persiste, contacta al administrador.");
-          console.warn('Login falló: no se encontraron registros para el usuario', user, error);
+        if (!response.ok) {
+          const errorTexto = await response.text();
+          console.error('Error devuelto por Supabase:', errorTexto);
+          alert(`❌ Error del servidor (${response.status}): ${errorTexto}`);
           return;
         }
 
-        if (recordar) {
-          localStorage.setItem('monteazul_logged', 'true');
-        } else {
-          sessionStorage.setItem('monteazul_logged', 'true');
-        }
+        const datos = await response.json();
+        console.log('Datos recibidos:', datos);
 
-        mostrarMenuPrincipal();
+        if (datos && datos.length > 0) {
+          if (recordar) {
+            localStorage.setItem('monteazul_logged', 'true');
+          } else {
+            sessionStorage.setItem('monteazul_logged', 'true');
+          }
+          mostrarMenuPrincipal();
+        } else {
+          alert('⚠️ Usuario o contraseña incorrectos.\n\nSi el problema persiste, contacta al administrador.');
+        }
       } catch (error) {
-        console.error('Error de login:', error);
-        alert("❌ Error de conexión con el servidor.\n\nDetalles: " + error.message);
+        console.error('Error de conexión en el catch:', error);
+        alert('❌ Error de red o bloqueo de conexión.\n\nDetalles: ' + error.message);
       }
     }
 
@@ -157,26 +181,36 @@
     async function registrarNuevoAdmin() {
       const newUser = document.getElementById('new-user').value.trim();
       const newPass = document.getElementById('new-pass').value;
-      if (!newUser || !newPass) { alert("Completa todos los campos"); return; }
+      if (!newUser || !newPass) {
+        alert('Completa todos los campos');
+        return;
+      }
 
       try {
-        const { error } = await supabase
-          .from('administradores')
-          .insert({ usuario: newUser, password: newPass });
+        const response = await fetch(`${SUPABASE_URL}/rest/v1/administradores`, {
+          method: 'POST',
+          headers: {
+            'apikey': SUPABASE_ANON_KEY,
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+            'Content-Type': 'application/json',
+            'Prefer': 'return=minimal'
+          },
+          body: JSON.stringify({ usuario: newUser, password: newPass })
+        });
 
-        if (error) {
-          alert("El usuario ya existe o no se pudo guardar.");
-          console.error('Error creando admin:', error);
-          return;
+        if (response.ok) {
+          alert('🎉 ¡Nuevo administrador creado con éxito!');
+          document.getElementById('new-user').value = '';
+          document.getElementById('new-pass').value = '';
+          cerrarModalNuevoAdmin();
+        } else {
+          const errorTexto = await response.text();
+          console.error('Error creando admin:', response.status, errorTexto);
+          alert('El usuario ya existe o no se pudo guardar.');
         }
-
-        alert("🎉 ¡Nuevo administrador creado con éxito!");
-        document.getElementById('new-user').value = "";
-        document.getElementById('new-pass').value = "";
-        cerrarModalNuevoAdmin();
       } catch (error) {
         console.error('Error al guardar administrador:', error);
-        alert("Error al guardar en el servidor.");
+        alert('Error al guardar en el servidor.');
       }
     }
   </script>
