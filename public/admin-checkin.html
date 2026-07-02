@@ -104,9 +104,9 @@
   <button class="btn-submit" type="button" onclick="generarEnlaceUnico()">🚀 Generar Enlace Único</button>
 
   <div id="resultado-box" class="resultado">
-    <strong>¡Enlace multireserva listo! Copia esto:</strong>
-    <p id="enlace-url" style="margin: 8px 0; font-weight: bold; color: #16a085;"></p>
-    <button class="btn-copy" type="button" onclick="copiarAlPortapapeles()">📋 Copiar Enlace</button>
+    <strong>¡Mensaje listo! Copia esto:</strong>
+    <p id="enlace-url" style="margin: 8px 0; font-weight: bold; color: #16a085; white-space: pre-wrap;"></p>
+    <button class="btn-copy" type="button" onclick="copiarAlPortapapeles()">📋 Copiar Mensaje</button>
   </div>
 </div>
 
@@ -127,6 +127,28 @@
 
   function generarLocalizador() {
     return `MA-${Math.floor(1000 + Math.random() * 9000)}`;
+  }
+
+  function generarTextoMensaje(nombre, numeroPersonas, link) {
+    return `Hola ${nombre}!
+
+Soy administrador de Monteazul!
+
+Os agradecemos mucho por elegirnos! Y confirmamos vuestra reserva.
+
+Nosotros no tenemos recepción físicamente, por eso es obligatorio que os registréis en nuestra página web para obtener un código de acceso al apartamento.
+
+${link}
+
+El formulario lo deben rellenar las ${numeroPersonas} personas mayores de edad que se hospeden y cada una debe subir su documento de identidad.
+
+Después del registro, un día antes o al día de la entrada enviaremos las instrucciones de acceso.
+
+Por eso es importante registrarse como máximo un día antes, para que hagáis el check-in rápido y tranquilo.
+
+Si tenéis algunas preguntas o dudas, siempre estamos aquí disponibles para resolver todo, no dudéis escribirnos!
+
+WA +34 651 312 280`;
   }
 
   async function generarEnlaceUnico() {
@@ -172,7 +194,8 @@
       if (!response.ok) throw new Error('Error guardando el enlace múltiple en Supabase.');
 
       const linkFinal = `${window.location.origin}/checkin.html?id=${encodeURIComponent(localizadorUnico)}`;
-      document.getElementById('enlace-url').innerText = linkFinal;
+      const mensajeCompleto = generarTextoMensaje(titular, totalHuespedes, linkFinal);
+      document.getElementById('enlace-url').innerText = mensajeCompleto;
       document.getElementById('resultado-box').style.display = 'block';
     } catch (error) {
       alert(error.message);
@@ -180,20 +203,20 @@
   }
 
   function copiarAlPortapapeles() {
-    const url = document.getElementById('enlace-url').innerText;
-    if (!url) {
-      alert('No hay enlace para copiar. Genera primero el enlace.');
+    const mensaje = document.getElementById('enlace-url').innerText;
+    if (!mensaje) {
+      alert('No hay mensaje para copiar. Genera primero el enlace.');
       return;
     }
 
     if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(url)
-        .then(() => alert('¡Enlace multireserva copiado al portapapeles!'))
-        .catch(() => fallbackCopyText(url));
+      navigator.clipboard.writeText(mensaje)
+        .then(() => alert('¡Mensaje copiado al portapapeles!'))
+        .catch(() => fallbackCopyText(mensaje));
       return;
     }
 
-    fallbackCopyText(url);
+    fallbackCopyText(mensaje);
   }
 
   function fallbackCopyText(text) {
@@ -209,12 +232,12 @@
     try {
       const successful = document.execCommand('copy');
       if (successful) {
-        alert('¡Enlace multireserva copiado al portapapeles!');
+        alert('¡Mensaje copiado al portapapeles!');
       } else {
-        alert('No se pudo copiar automáticamente. Selecciona el enlace manualmente.');
+        alert('No se pudo copiar automáticamente. Selecciona el texto manualmente.');
       }
     } catch (err) {
-      alert('No se pudo copiar automáticamente. Selecciona el enlace manualmente.');
+      alert('No se pudo copiar automáticamente. Selecciona el texto manualmente.');
     }
 
     document.body.removeChild(textarea);
