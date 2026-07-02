@@ -193,7 +193,7 @@ WA +34 651 312 280`;
 
       if (!response.ok) throw new Error('Error guardando el enlace múltiple en Supabase.');
 
-      const linkFinal = `${window.location.origin}/checkin.html?id=${encodeURIComponent(localizadorUnico)}`;
+      const linkFinal = `${window.location.origin}/checkin?id=${encodeURIComponent(localizadorUnico)}`;
       const mensajeCompleto = generarTextoMensaje(titular, totalHuespedes, linkFinal);
       document.getElementById('enlace-url').innerText = mensajeCompleto;
       document.getElementById('resultado-box').style.display = 'block';
