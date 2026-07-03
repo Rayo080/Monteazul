@@ -141,7 +141,7 @@
 
   async function cargarReserva() {
     try {
-      const response = await fetch(`${SUPABASE_URL}/rest/v1/enlaces_checkin?localizador=eq.${encodeURIComponent(reservaId)}&estado=eq.pendiente`, {
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/enlaces_checkin?select=id,localizador,nombre_titular,habitacion_tipo,numero_huespedes,fecha_entrada,fecha_salida,estado&localizador=eq.${encodeURIComponent(reservaId)}&estado=eq.pendiente`, {
         method: 'GET',
         headers: {
           'apikey': SUPABASE_ANON_KEY,
@@ -363,6 +363,11 @@
     btnSiguiente.innerText = 'Guardando credenciales...';
 
     try {
+      const reservaIdParaInsertar = datosReserva?.id || datosReserva?.enlace_id;
+      if (!reservaIdParaInsertar || reservaIdParaInsertar === 'undefined') {
+        throw new Error('El ID de la reserva no se ha cargado correctamente. Inténtalo de nuevo.');
+      }
+
       const filasParaInsertar = [];
       for (const huesped of huespedesRegistrados) {
         const nombreArchivo = `${datosReserva.localizador || 'checkin'}-${huesped.indice}-${Date.now()}.jpg`;
@@ -383,7 +388,7 @@
 
         const urlPublicaFoto = `${SUPABASE_URL}/storage/v1/object/public/dni-fotos/${encodeURIComponent(nombreArchivo)}`;
         filasParaInsertar.push({
-          enlace_id: datosReserva.id,
+          enlace_id: reservaIdParaInsertar,
           localizador: datosReserva.localizador,
           nombre_completo: `${datosReserva.nombre_titular || 'Huésped'} - Huésped ${huesped.indice}`,
           documento_identidad: 'VERIFICADO_VIA_FOTO',
@@ -406,7 +411,8 @@
         throw new Error('Error al registrar la verificación en la base de datos.');
       }
 
-      const actualizaReserva = await fetch(`${SUPABASE_URL}/rest/v1/enlaces_checkin?localizador=eq.${encodeURIComponent(reservaId.trim())}`, {
+      const localizadorReserva = (reservaId || '').trim();
+      const actualizaReserva = await fetch(`${SUPABASE_URL}/rest/v1/enlaces_checkin?localizador=eq.${encodeURIComponent(localizadorReserva)}`, {
         method: 'PATCH',
         headers: {
           'apikey': SUPABASE_ANON_KEY,
