@@ -33,6 +33,15 @@
     .no-data { color: #64748b; font-style: italic; }
     .btn-delete { background: #dc2626; color: white; border: none; padding: 6px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
     .btn-delete:hover { background: #b91c1c; }
+    .section-tabs { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 18px; }
+    .tab-btn { border: 1px solid #cbd5e1; background: #f8fafc; color: #334155; padding: 10px 14px; border-radius: 999px; font-weight: 700; cursor: pointer; }
+    .tab-btn.active { background: #2563eb; color: white; border-color: #2563eb; }
+    .section-panel { display: block; }
+    .section-panel.hidden { display: none; }
+    .section-toolbar { display: flex; justify-content: flex-end; margin-bottom: 12px; }
+    .btn-delete-all { background: #f59e0b; color: white; border: none; padding: 10px 14px; border-radius: 10px; font-weight: 700; cursor: pointer; }
+    .btn-delete-all:hover { background: #d97706; }
+    .empty-state { text-align:center; color:#64748b; padding:20px; }
 
     @media (max-width: 860px) {
       .container { padding: 16px; }
@@ -65,19 +74,137 @@
     🛡️ Las reservas se agrupan por <strong>localizador</strong>. Si varios huéspedes pertenecen al mismo grupo, se muestran juntos en una misma tarjeta de reserva.
   </div>
 
-  <div id="panel-reservas">
-    <div style="text-align:center; color:#64748b; padding:20px;">Cargando registros de Supabase...</div>
+  <div class="section-tabs">
+    <button class="tab-btn active" type="button" data-target="recientes" onclick="mostrarSeccion('recientes')">✅ Completados recientes</button>
+    <button class="tab-btn" type="button" data-target="antiguos" onclick="mostrarSeccion('antiguos')">🗂️ Completados antiguos</button>
+    <button class="tab-btn" type="button" data-target="pendientes" onclick="mostrarSeccion('pendientes')">⏳ Pendientes</button>
   </div>
+
+  <div id="panel-recientes" class="section-panel">
+    <div class="empty-state">Cargando registros de Supabase...</div>
+  </div>
+  <div id="panel-antiguos" class="section-panel hidden"></div>
+  <div id="panel-pendientes" class="section-panel hidden"></div>
 </div>
 
 <script>
   const SUPABASE_URL = "https://hhapopvdhddkpwpdubqi.supabase.co";
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhoYXBvcHZkaGRka3B3cGR1YnFpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjczODUzOTEsImV4cCI6MjA4Mjk2MTM5MX0.bD-V_ywVOlWpw8jr5jeny52bBq36fBRA9gsvGdHv1qI";
+  let reservasPorSeccion = { recientes: [], antiguos: [], pendientes: [] };
 
   window.addEventListener('DOMContentLoaded', cargarDatosVinculados);
 
+  function mostrarSeccion(seccion) {
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.target === seccion);
+    });
+
+    document.querySelectorAll('.section-panel').forEach(panel => {
+      panel.classList.toggle('hidden', panel.id !== `panel-${seccion}`);
+    });
+  }
+
+  function calcularFechaUltimaActualizacion(huespedes) {
+    if (!huespedes?.length) return null;
+    const fechas = huespedes
+      .map(h => (h.fecha_registro ? new Date(h.fecha_registro).getTime() : null))
+      .filter(Boolean);
+    return fechas.length ? Math.max(...fechas) : null;
+  }
+
+  function formatearFecha(fecha) {
+    if (!fecha) return '---';
+    return new Date(fecha).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  }
+
+  function formatearFechaHora(fecha) {
+    if (!fecha) return '---';
+    return `${new Date(fecha).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' })} ${new Date(fecha).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}`;
+  }
+
+  function crearCardReserva(reserva) {
+    const entrada = formatearFecha(reserva.fecha_entrada);
+    const salida = formatearFecha(reserva.fecha_salida);
+    const fechaRegistro = reserva.fecha_ultima_registro ? formatearFechaHora(reserva.fecha_ultima_registro) : '---';
+
+    const filasHuespedes = reserva.huespedes.length
+      ? reserva.huespedes.map(h => {
+          const fReg = h.fecha_registro ? formatearFechaHora(h.fecha_registro) : '---';
+          return `
+            <tr>
+              <td data-label="Nombre Ocupante">${h.nombre_completo || '---'}<br><span class="texto-secundario">Reg: ${fReg}</span></td>
+              <td data-label="Nº Documento"><code>${h.documento_identidad || '---'}</code></td>
+              <td data-label="Foto Identidad">${h.foto_documento_url ? `<a href="${h.foto_documento_url}" target="_blank">Ver Documento</a>` : '<span class="no-data">Borrado RGPD</span>'}</td>
+              <td data-label="Firma">${h.firma_digital ? `<img src="${h.firma_digital}" class="firma-thumbnail" alt="Firma">` : '<span class="no-data">Sin firma</span>'}</td>
+              <td data-label="Acciones"><button class="btn-delete" onclick="eliminarRegistro('${h.id}')">Eliminar</button></td>
+            </tr>
+          `;
+        }).join('')
+      : `<tr><td colspan="5" class="no-data">Ningún huésped registrado todavía para este localizador.</td></tr>`;
+
+    const card = document.createElement('div');
+    card.className = 'reserva-card';
+    card.innerHTML = `
+      <div class="reserva-header">
+        <div>
+          <h3 class="reserva-title">Localizador: ${reserva.localizador || '---'}</h3>
+          <div class="reserva-meta">
+            <span class="chip chip-hab">${reserva.habitacion_tipo || 'Multi-Habitación'}</span>
+            <span class="chip chip-pax">${reserva.numero_huespedes || '---'} Adulto/s</span>
+          </div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 10px; align-items: flex-end;">
+          <div>
+            <span class="chip chip-date">Entrada: ${entrada}</span>
+            <span class="chip chip-date">Salida: ${salida}</span>
+          </div>
+          <div>
+            <span class="chip chip-date">Último registro: ${fechaRegistro}</span>
+          </div>
+          <button class="btn-delete" onclick="eliminarReserva('${reserva.localizador || ''}')">Eliminar Reserva Completa</button>
+        </div>
+      </div>
+      <table class="huespedes-lista">
+        <thead>
+          <tr>
+            <th>Nombre Ocupante</th>
+            <th>Nº Documento</th>
+            <th>Foto Identidad</th>
+            <th>Firma</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${filasHuespedes}
+        </tbody>
+      </table>
+    `;
+    return card;
+  }
+
+  function renderizarSeccion(panelId, reservas, titulo, vacio) {
+    const panel = document.getElementById(panelId);
+    panel.innerHTML = '';
+
+    if (!reservas.length) {
+      panel.innerHTML = `<div class="empty-state">${vacio}</div>`;
+      return;
+    }
+
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = `<div style="margin-bottom: 14px; color: #475569; font-weight: 600;">${titulo}</div>`;
+    panel.appendChild(wrapper);
+
+    reservas.forEach(reserva => {
+      panel.appendChild(crearCardReserva(reserva));
+    });
+  }
+
   async function cargarDatosVinculados() {
-    const panel = document.getElementById('panel-reservas');
+    const panelRecientes = document.getElementById('panel-recientes');
+    const panelAntiguos = document.getElementById('panel-antiguos');
+    const panelPendientes = document.getElementById('panel-pendientes');
+
     try {
       const headers = {
         'apikey': SUPABASE_ANON_KEY,
@@ -86,7 +213,7 @@
 
       const [resHuespedes, resCheckin] = await Promise.all([
         fetch(`${SUPABASE_URL}/rest/v1/partes_huespedes?select=localizador,nombre_completo,documento_identidad,firma_digital,fecha_registro,foto_documento_url&order=localizador,fecha_registro.desc`, { headers }),
-        fetch(`${SUPABASE_URL}/rest/v1/enlaces_checkin?select=localizador,habitacion_tipo,numero_huespedes,fecha_entrada,fecha_salida&order=localizador`, { headers })
+        fetch(`${SUPABASE_URL}/rest/v1/enlaces_checkin?select=localizador,habitacion_tipo,numero_huespedes,fecha_entrada,fecha_salida,estado&order=localizador`, { headers })
       ]);
 
       if (!resHuespedes.ok || !resCheckin.ok) {
@@ -98,7 +225,9 @@
       const checkins = await resCheckin.json();
 
       if (!checkins.length) {
-        panel.innerHTML = `<div style="text-align:center; color:#64748b; padding:20px;">No hay reservas activas en enlaces_checkin.</div>`;
+        [panelRecientes, panelAntiguos, panelPendientes].forEach(panel => {
+          panel.innerHTML = '<div class="empty-state">No hay reservas activas en enlaces_checkin.</div>';
+        });
         return;
       }
 
@@ -111,71 +240,58 @@
       huespedes.forEach(h => {
         const key = h.localizador?.trim() || 'SIN_LOCALIZADOR';
         if (!reservas[key]) {
-          reservas[key] = { localizador: key, habitacion_tipo: 'No registrada', numero_huespedes: '---', fecha_entrada: null, fecha_salida: null, huespedes: [] };
+          reservas[key] = { localizador: key, habitacion_tipo: 'No registrada', numero_huespedes: '---', fecha_entrada: null, fecha_salida: null, estado: 'pendiente', huespedes: [] };
         }
         reservas[key].huespedes.push(h);
       });
 
-      panel.innerHTML = '';
-      Object.values(reservas).forEach(reserva => {
-        const entrada = reserva.fecha_entrada ? new Date(reserva.fecha_entrada).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '---';
-        const salida = reserva.fecha_salida ? new Date(reserva.fecha_salida).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '---';
+      const ahora = Date.now();
+      const unaSemana = 7 * 24 * 60 * 60 * 1000;
+      const reservasArray = Object.values(reservas).map(reserva => ({
+        ...reserva,
+        fecha_ultima_registro: calcularFechaUltimaActualizacion(reserva.huespedes)
+      }));
 
-        const filasHuespedes = reserva.huespedes.length
-          ? reserva.huespedes.map(h => {
-              const fReg = h.fecha_registro ? new Date(h.fecha_registro).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' }) + ' ' + new Date(h.fecha_registro).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : '---';
-              return `
-                <tr>
-                  <td data-label="Nombre Ocupante">${h.nombre_completo || '---'}<br><span class="texto-secundario">Reg: ${fReg}</span></td>
-                  <td data-label="Nº Documento"><code>${h.documento_identidad || '---'}</code></td>
-                  <td data-label="Foto Identidad">${h.foto_documento_url ? `<a href="${h.foto_documento_url}" target="_blank">Ver Documento</a>` : '<span class="no-data">Borrado RGPD</span>'}</td>
-                  <td data-label="Firma">${h.firma_digital ? `<img src="${h.firma_digital}" class="firma-thumbnail" alt="Firma">` : '<span class="no-data">Sin firma</span>'}</td>
-                  <td data-label="Acciones"><button class="btn-delete" onclick="eliminarRegistro('${h.id}')">Eliminar</button></td>
-                </tr>
-              `;
-            }).join('')
-          : `<tr><td colspan="5" class="no-data">Ningún huésped registrado todavía para este localizador.</td></tr>`;
+      const recientes = reservasArray
+        .filter(reserva => reserva.huespedes.length > 0 && reserva.fecha_ultima_registro && (ahora - reserva.fecha_ultima_registro) < unaSemana)
+        .sort((a, b) => (b.fecha_ultima_registro || 0) - (a.fecha_ultima_registro || 0));
+      const antiguos = reservasArray
+        .filter(reserva => reserva.huespedes.length > 0 && reserva.fecha_ultima_registro && (ahora - reserva.fecha_ultima_registro) >= unaSemana)
+        .sort((a, b) => (b.fecha_ultima_registro || 0) - (a.fecha_ultima_registro || 0));
+      const pendientes = reservasArray
+        .filter(reserva => reserva.huespedes.length === 0)
+        .sort((a, b) => (b.fecha_ultima_registro || 0) - (a.fecha_ultima_registro || 0));
 
-        const card = document.createElement('div');
-        card.className = 'reserva-card';
-        card.innerHTML = `
-          <div class="reserva-header">
-            <div>
-              <h3 class="reserva-title">Localizador: ${reserva.localizador || '---'}</h3>
-              <div class="reserva-meta">
-                <span class="chip chip-hab">${reserva.habitacion_tipo || 'Multi-Habitación'}</span>
-                <span class="chip chip-pax">${reserva.numero_huespedes || '---'} Adulto/s</span>
-              </div>
-            </div>
-            <div style="display: flex; flex-direction: column; gap: 10px; align-items: flex-end;">
-              <div>
-                <span class="chip chip-date">Entrada: ${entrada}</span>
-                <span class="chip chip-date">Salida: ${salida}</span>
-              </div>
-              <button class="btn-delete" onclick="eliminarReserva('${reserva.localizador}')">Eliminar Reserva Completa</button>
-            </div>
+      reservasPorSeccion = { recientes, antiguos, pendientes };
+
+      renderizarSeccion('panel-recientes', recientes, 'Mostrando los localizadores completados y rellenados en los últimos 7 días.', 'No hay localizadores completos en la última semana.');
+      renderizarSeccion('panel-antiguos', antiguos, 'Mostrando los localizadores completados con más de 7 días desde su último registro.', 'No hay localizadores completos más antiguos.');
+
+      const panelPendientes = document.getElementById('panel-pendientes');
+      panelPendientes.innerHTML = '';
+      if (!pendientes.length) {
+        panelPendientes.innerHTML = '<div class="empty-state">No hay localizadores pendientes por completar.</div>';
+      } else {
+        panelPendientes.innerHTML = `
+          <div class="section-toolbar">
+            <button class="btn-delete-all" type="button" onclick="eliminarPendientes()">🗑️ Eliminar todos los pendientes</button>
           </div>
-          <table class="huespedes-lista">
-            <thead>
-              <tr>
-                <th>Nombre Ocupante</th>
-                <th>Nº Documento</th>
-                <th>Foto Identidad</th>
-                <th>Firma</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${filasHuespedes}
-            </tbody>
-          </table>
         `;
-
-        panel.appendChild(card);
-      });
+        const titulo = document.createElement('div');
+        titulo.style.marginBottom = '14px';
+        titulo.style.color = '#475569';
+        titulo.style.fontWeight = '600';
+        titulo.textContent = 'Mostrando los localizadores que no llegaron a completarse.';
+        panelPendientes.appendChild(titulo);
+        pendientes.forEach(reserva => {
+          panelPendientes.appendChild(crearCardReserva(reserva));
+        });
+      }
     } catch (error) {
       console.error(error);
-      panel.innerHTML = `<div style="text-align:center; color:#dc2626; padding:20px;">⚠️ Error cargando reservas: ${error.message}</div>`;
+      [panelRecientes, panelAntiguos, panelPendientes].forEach(panel => {
+        panel.innerHTML = `<div class="empty-state" style="color:#dc2626;">⚠️ Error cargando reservas: ${error.message}</div>`;
+      });
     }
   }
 
@@ -205,11 +321,16 @@
   }
 
   async function eliminarReserva(localizador) {
-    if (!confirm("¿Estás seguro de que quieres eliminar TODA la reserva: " + localizador + "?\n\nEsta acción borrará todos los huéspedes y la reserva completa. No se puede deshacer.")) return;
+    const localizadorLimpio = (localizador || '').trim();
+    if (!localizadorLimpio) {
+      alert('No hay un localizador válido para eliminar.');
+      return;
+    }
+
+    if (!confirm("¿Estás seguro de que quieres eliminar TODA la reserva: " + localizadorLimpio + "?\n\nEsta acción borrará todos los huéspedes y la reserva completa. No se puede deshacer.")) return;
 
     try {
-      // 1. Borrar primero todos los huéspedes asociados
-      await fetch(`${SUPABASE_URL}/rest/v1/partes_huespedes?localizador=eq.${encodeURIComponent(localizador.trim())}`, {
+      await fetch(`${SUPABASE_URL}/rest/v1/partes_huespedes?localizador=eq.${encodeURIComponent(localizadorLimpio)}`, {
         method: 'DELETE',
         headers: {
           'apikey': SUPABASE_ANON_KEY,
@@ -218,8 +339,7 @@
         }
       });
 
-      // 2. Luego borrar el enlace principal
-      const response = await fetch(`${SUPABASE_URL}/rest/v1/enlaces_checkin?localizador=eq.${encodeURIComponent(localizador.trim())}`, {
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/enlaces_checkin?localizador=eq.${encodeURIComponent(localizadorLimpio)}`, {
         method: 'DELETE',
         headers: {
           'apikey': SUPABASE_ANON_KEY,
@@ -237,6 +357,41 @@
     } catch (error) {
       console.error("Error:", error);
       alert("Problemas de conexión con el servidor.");
+    }
+  }
+
+  async function eliminarPendientes() {
+    if (!confirm("¿Quieres eliminar todos los localizadores pendientes? Se borrarán también los huéspedes asociados.")) return;
+
+    try {
+      for (const reserva of reservasPorSeccion.pendientes) {
+        const localizador = (reserva.localizador || '').trim();
+        if (!localizador) continue;
+
+        await fetch(`${SUPABASE_URL}/rest/v1/partes_huespedes?localizador=eq.${encodeURIComponent(localizador)}`, {
+          method: 'DELETE',
+          headers: {
+            'apikey': SUPABASE_ANON_KEY,
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+            'Prefer': 'return=minimal'
+          }
+        });
+
+        await fetch(`${SUPABASE_URL}/rest/v1/enlaces_checkin?localizador=eq.${encodeURIComponent(localizador)}`, {
+          method: 'DELETE',
+          headers: {
+            'apikey': SUPABASE_ANON_KEY,
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+            'Prefer': 'return=minimal'
+          }
+        });
+      }
+
+      alert("Se han eliminado los localizadores pendientes.");
+      location.reload();
+    } catch (error) {
+      console.error("Error:", error);
+      alert("No se pudieron eliminar todos los pendientes. Inténtalo de nuevo.");
     }
   }
 </script>
