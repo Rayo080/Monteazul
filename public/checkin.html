@@ -30,6 +30,12 @@
     .canvas-firma { border: 2px dashed #95a5a6; border-radius: 12px; background: #fafafa; cursor: crosshair; touch-action: none; width: 100%; }
     .btn-clear { background: #e74c3c; padding: 8px 14px; font-size: 12px; width: auto; margin-top: 10px; float: right; }
     .btn-clear:hover { background: #c0392b; }
+    .pet-toggle { display: flex; gap: 10px; margin-top: 8px; flex-wrap: wrap; }
+    .btn-mascota { width: auto; min-width: 90px; padding: 10px 16px; background: #f7fafc; color: #2c3e50; border: 1px solid #d7e3eb; border-radius: 999px; font-size: 14px; font-weight: 700; box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
+    .btn-mascota:hover { background: #eef5f9; }
+    .btn-mascota.active { background: #2c3e50; color: white; border-color: #2c3e50; box-shadow: 0 4px 10px rgba(44,62,80,0.16); }
+    .info-mascota { margin-top: 12px; background: linear-gradient(135deg, #fffdf3 0%, #fef7d8 100%); border: 1px solid #e6c969; color: #7a5b00; padding: 14px 15px; border-radius: 12px; font-size: 14px; line-height: 1.6; display: none; }
+    .info-mascota strong { color: #6b4f00; }
     .escanner-container { background: #fdfefe; padding: 22px; border-radius: 14px; border: 2px dashed #3498db; text-align: center; margin-bottom: 26px; box-shadow: inset 0 2px 8px rgba(52,152,219,0.08); }
     .escanner-label { color: #2c3e50; font-size: 17px; font-weight: 700; margin-bottom: 8px; display: block; }
     .escanner-subtxt { font-size: 13px; color: #6c7a89; margin: 0 0 16px 0; line-height: 1.5; }
@@ -105,6 +111,24 @@
       <button type="button" class="btn-clear" id="btn-borrar-firma">Borrar Firma</button>
     </div>
 
+    <div class="form-group" id="seccion-mascota" style="display: none; background: #f8fbfd; border: 1px solid #e3edf3; border-radius: 12px; padding: 16px;">
+      <label style="margin-bottom: 6px; color: #2c3e50;">¿Llevas mascota?</label>
+      <p style="margin: 0 0 10px 0; font-size: 13px; color: #6c7a89;">Indica si viajarás con mascota y, en caso afirmativo, cuántas llevas.</p>
+      <div class="pet-toggle" role="group" aria-label="Selecciona si llevas mascota">
+        <button type="button" id="btn-mascotas-no" class="btn-mascota" onclick="seleccionarMascotas(0)">No</button>
+        <button type="button" id="btn-mascotas-si" class="btn-mascota" onclick="seleccionarMascotas('si')">Sí</button>
+      </div>
+      <div class="pet-toggle" id="selector-cantidad-mascotas" style="display: none; margin-top: 10px;" role="group" aria-label="Selecciona cuántas mascotas llevas">
+        <button type="button" id="btn-mascotas-1" class="btn-mascota" onclick="seleccionarMascotas(1)">1 mascota</button>
+        <button type="button" id="btn-mascotas-2" class="btn-mascota" onclick="seleccionarMascotas(2)">2 mascotas</button>
+      </div>
+      <div id="info-mascota" class="info-mascota">
+        <strong>⚠️ Recargo por mascota:</strong> 10 € por mascota y día.
+        <br>
+        Máximo 2 mascotas por habitación. Se admiten perros y gatos. Si viajas con otro tipo de mascota, consúltanos antes de reservar.
+      </div>
+    </div>
+
     <button id="btn-siguiente" onclick="procesarCheckin()" disabled>Finalizar Check-in (Solo con DNI válido)</button>
     <p style="font-size: 11px; color: #7f8c8d; text-align: center; margin-top: 10px;">* El botón se activa solo cuando la foto del documento es válida.</p>
   </div>
@@ -129,6 +153,7 @@
   let canvas, ctx, dibujando = false;
   let huespedActualIndice = 1;
   let huespedesRegistrados = [];
+  let mascotasSeleccionadas = null;
 
   window.addEventListener('DOMContentLoaded', async () => {
     if (!reservaId) {
@@ -136,6 +161,7 @@
       return;
     }
     inicializarFirma();
+    inicializarMascotas();
     await cargarReserva();
   });
 
@@ -262,7 +288,7 @@
         statusTxt.className = 'status-success';
         statusTxt.innerText = '✅ Documento oficial verificado y vinculado.';
         btnDisparador.innerText = '📸 Cambiar Foto';
-        btnSiguiente.disabled = false;
+        actualizarEstadoBoton();
       };
 
       img.onerror = function() {
@@ -292,6 +318,18 @@
     }
   }
 
+  function actualizarEstadoBoton() {
+    const btnSiguiente = document.getElementById('btn-siguiente');
+    if (!btnSiguiente) return;
+
+    const esUltimoHuesped = huespedActualIndice >= (Number(datosReserva?.numero_huespedes) || 1);
+    const seccionMascota = document.getElementById('seccion-mascota');
+    const requiereMascota = seccionMascota && seccionMascota.style.display === 'block';
+
+    const puedeContinuar = Boolean(fotoActualBase64 && firmaEsValida() && (!requiereMascota || mascotasSeleccionadas !== null));
+    btnSiguiente.disabled = !puedeContinuar;
+  }
+
   function procesarCheckin() {
     if (!fotoActualBase64) {
       alert('La verificación del DNI es obligatoria antes de continuar.');
@@ -299,6 +337,12 @@
     }
     if (!firmaEsValida()) {
       alert('Por favor, firma en el cuadro antes de continuar.');
+      return;
+    }
+    const seccionMascota = document.getElementById('seccion-mascota');
+    const esUltimoHuesped = huespedActualIndice >= (Number(datosReserva?.numero_huespedes) || 1);
+    if (seccionMascota && seccionMascota.style.display === 'block' && mascotasSeleccionadas === null) {
+      alert('Por favor, indica cuántas mascotas llevas antes de continuar.');
       return;
     }
 
@@ -322,6 +366,11 @@
     document.getElementById('info-progreso').innerText = `Huésped ${huespedActualIndice} de ${total}`;
     const btnSiguiente = document.getElementById('btn-siguiente');
     btnSiguiente.innerText = huespedActualIndice < total ? 'Siguiente Huésped ➡️' : 'Finalizar Check-in';
+    const seccionMascota = document.getElementById('seccion-mascota');
+    if (seccionMascota) {
+      seccionMascota.style.display = huespedActualIndice >= total ? 'block' : 'none';
+    }
+    actualizarEstadoBoton();
   }
 
   function reiniciarPasoHuesped() {
@@ -333,8 +382,70 @@
     document.getElementById('btn-disparador-camara').innerText = '📸 Abrir Cámara';
     document.getElementById('btn-siguiente').disabled = true;
     limpiarFirma();
+    mascotasSeleccionadas = null;
+    document.querySelectorAll('.btn-mascota').forEach((boton) => boton.classList.remove('active'));
+    document.getElementById('selector-cantidad-mascotas').style.display = 'none';
+    document.getElementById('info-mascota').style.display = 'none';
     actualizarProgreso();
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function inicializarMascotas() {
+    const botones = document.querySelectorAll('.btn-mascota');
+    const panel = document.getElementById('info-mascota');
+
+    botones.forEach((boton) => {
+      boton.classList.remove('active');
+    });
+
+    const selectorCantidad = document.getElementById('selector-cantidad-mascotas');
+    if (selectorCantidad) {
+      selectorCantidad.style.display = 'none';
+    }
+
+    if (panel) {
+      panel.style.display = 'none';
+    }
+  }
+
+  function seleccionarMascotas(cantidad) {
+    const esNo = cantidad === 0;
+    const esSi = cantidad === 'si';
+    const esCantidad = cantidad === 1 || cantidad === 2;
+
+    if (esNo) {
+      mascotasSeleccionadas = 0;
+    } else if (esSi) {
+      mascotasSeleccionadas = null;
+    } else if (esCantidad) {
+      mascotasSeleccionadas = cantidad;
+    }
+
+    document.querySelectorAll('.btn-mascota').forEach((btn) => {
+      btn.classList.remove('active');
+    });
+
+    const btnNo = document.getElementById('btn-mascotas-no');
+    const btnSi = document.getElementById('btn-mascotas-si');
+    const btnCantidad1 = document.getElementById('btn-mascotas-1');
+    const btnCantidad2 = document.getElementById('btn-mascotas-2');
+
+    if (btnNo && esNo) btnNo.classList.add('active');
+    if (btnSi && (esSi || esCantidad)) btnSi.classList.add('active');
+    if (btnCantidad1 && cantidad === 1) btnCantidad1.classList.add('active');
+    if (btnCantidad2 && cantidad === 2) btnCantidad2.classList.add('active');
+
+    const selectorCantidad = document.getElementById('selector-cantidad-mascotas');
+    if (selectorCantidad) {
+      selectorCantidad.style.display = (esSi || esCantidad) ? 'flex' : 'none';
+    }
+
+    const panel = document.getElementById('info-mascota');
+    if (panel) {
+      panel.style.display = esSi || esCantidad ? 'block' : 'none';
+    }
+
+    actualizarEstadoBoton();
   }
 
   function firmaEsValida() {
@@ -393,7 +504,8 @@
           nombre_completo: `${datosReserva.nombre_titular || 'Huésped'} - Huésped ${huesped.indice}`,
           documento_identidad: 'VERIFICADO_VIA_FOTO',
           firma_digital: huesped.firma,
-          foto_documento_url: urlPublicaFoto
+          foto_documento_url: urlPublicaFoto,
+          cantidad_mascotas: Number(mascotasSeleccionadas ?? 0)
         });
       }
 

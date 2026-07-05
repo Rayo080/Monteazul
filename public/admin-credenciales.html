@@ -21,6 +21,7 @@
     .chip-hab { background: #dbeafe; color: #1d4ed8; }
     .chip-pax { background: #f5d0fe; color: #7c3aed; }
     .chip-date { background: #f8fafc; color: #475569; }
+    .chip-pet { background: #ecfccb; color: #3f6212; }
 
     .huespedes-lista { width: 100%; border-collapse: collapse; margin-top: 12px; }
     .huespedes-lista th, .huespedes-lista td { padding: 14px 16px; border-bottom: 1px solid #e2e8f0; }
@@ -122,10 +123,23 @@
     return `${new Date(fecha).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' })} ${new Date(fecha).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}`;
   }
 
+  function formatearMascotas(huespedes) {
+    const valores = (huespedes || [])
+      .map(h => Number(h?.cantidad_mascotas ?? 0))
+      .filter(valor => Number.isFinite(valor));
+
+    if (!valores.length) return 'Sin mascota';
+
+    const cantidad = Math.max(...valores);
+    if (cantidad === 0) return 'Sin mascota';
+    return `${cantidad} mascota${cantidad === 1 ? '' : 's'}`;
+  }
+
   function crearCardReserva(reserva) {
     const entrada = formatearFecha(reserva.fecha_entrada);
     const salida = formatearFecha(reserva.fecha_salida);
     const fechaRegistro = reserva.fecha_ultima_registro ? formatearFechaHora(reserva.fecha_ultima_registro) : '---';
+    const mascotasTexto = formatearMascotas(reserva.huespedes);
 
     const filasHuespedes = reserva.huespedes.length
       ? reserva.huespedes.map(h => {
@@ -151,6 +165,7 @@
           <div class="reserva-meta">
             <span class="chip chip-hab">${reserva.habitacion_tipo || 'Multi-Habitación'}</span>
             <span class="chip chip-pax">${reserva.numero_huespedes || '---'} Adulto/s</span>
+            <span class="chip chip-pet">Mascotas: ${mascotasTexto}</span>
           </div>
         </div>
         <div style="display: flex; flex-direction: column; gap: 10px; align-items: flex-end;">
@@ -212,7 +227,7 @@
       };
 
       const [resHuespedes, resCheckin] = await Promise.all([
-        fetch(`${SUPABASE_URL}/rest/v1/partes_huespedes?select=localizador,nombre_completo,documento_identidad,firma_digital,fecha_registro,foto_documento_url&order=localizador,fecha_registro.desc`, { headers }),
+        fetch(`${SUPABASE_URL}/rest/v1/partes_huespedes?select=localizador,nombre_completo,documento_identidad,firma_digital,fecha_registro,foto_documento_url,cantidad_mascotas&order=localizador,fecha_registro.desc`, { headers }),
         fetch(`${SUPABASE_URL}/rest/v1/enlaces_checkin?select=localizador,habitacion_tipo,numero_huespedes,fecha_entrada,fecha_salida,estado&order=localizador`, { headers })
       ]);
 
