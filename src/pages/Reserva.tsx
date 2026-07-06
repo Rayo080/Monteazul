@@ -470,6 +470,22 @@ const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PK || 'pk_test_TU_C
   const display_tasa_gestion = Math.ceil((display_total_base * 0.035) + 0.25);
   const display_total = display_total_base + display_tasa_gestion;
 
+  const getRoomUnitPrice = (roomId: string) => {
+    const avg = roomId === 'deluxe' ? avgPricePrivate : roomId === 'premium' ? avgPriceDeluxe : avgPriceShared;
+    if (range?.from && avg !== null && avg !== undefined) {
+      return avg;
+    }
+    const selectedRoom = rooms.find((room) => room.id === roomId);
+    return selectedRoom?.price ?? 0;
+  };
+
+  const abrirWhatsAppDisponibilidad = (roomName: string) => {
+    const mensaje = encodeURIComponent(
+      `Hola, buenas. Quiero información sobre las habitaciones en Monteazul. Me interesa ${roomName}.`
+    );
+    window.open(`https://wa.me/34651391228?text=${mensaje}`, "_blank", "noopener,noreferrer");
+  };
+
   return (
     <div className="min-h-screen">
       <Header light />
@@ -603,7 +619,10 @@ const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PK || 'pk_test_TU_C
                     if (range?.from && (avail === 0)) return false;
                     return true;
                   })
-                  .map((room) => (
+                  .map((room) => {
+                    const unitPrice = getRoomUnitPrice(room.id);
+                    const isPriceZero = unitPrice === 0;
+                    return (
                 <div
                   key={room.id}
                   className="flex flex-col md:flex-row gap-4 md:gap-6 bg-background rounded-lg shadow-md p-4 md:p-6 items-start md:items-center"
@@ -712,6 +731,11 @@ const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PK || 'pk_test_TU_C
                         size="sm"
                         disabled={roomSelections[room.id].quantity <= 0}
                         onClick={() => {
+                          if (isPriceZero) {
+                            abrirWhatsAppDisponibilidad(room.name);
+                            return;
+                          }
+
                           const qty = roomSelections[room.id]?.quantity || 0;
                           const avg = room.id === 'deluxe' ? avgPricePrivate : room.id === 'premium' ? avgPriceDeluxe : avgPriceShared;
                           const unit = (range?.from && avg !== null && avg !== undefined) ? avg : room.price;
@@ -726,7 +750,7 @@ const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PK || 'pk_test_TU_C
                           setClienteNotas("");
                         }}
                       >
-                        Reservar
+                        {isPriceZero ? "Consultar disponibilidad" : "Reservar"}
                       </Button>
                     </div>
 
@@ -858,7 +882,8 @@ const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PK || 'pk_test_TU_C
                     </div>
                   </div>
                 </div>
-                ))
+                );
+              })
               ) : (
                 <div className="p-8 text-center text-muted-foreground">Elige fechas para ver disponibilidad</div>
               )}
