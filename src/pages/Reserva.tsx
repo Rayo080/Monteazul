@@ -621,7 +621,7 @@ const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PK || 'pk_test_TU_C
                   })
                   .map((room) => {
                     const unitPrice = getRoomUnitPrice(room.id);
-                    const isPriceZero = unitPrice === 0;
+                    const isPriceZeroOrOne = unitPrice === 0 || unitPrice === 1;
                     return (
                 <div
                   key={room.id}
@@ -731,7 +731,7 @@ const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PK || 'pk_test_TU_C
                         size="sm"
                         disabled={roomSelections[room.id].quantity <= 0}
                         onClick={() => {
-                          if (isPriceZero) {
+                          if (isPriceZeroOrOne) {
                             abrirWhatsAppDisponibilidad(room.name);
                             return;
                           }
@@ -750,7 +750,7 @@ const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PK || 'pk_test_TU_C
                           setClienteNotas("");
                         }}
                       >
-                        {isPriceZero ? "Consultar disponibilidad" : "Reservar"}
+                        {isPriceZeroOrOne ? "Consultar disponibilidad" : "Reservar"}
                       </Button>
                     </div>
 
